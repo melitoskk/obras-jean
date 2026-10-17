@@ -6,6 +6,7 @@
         "run", "-i", "--rm", "--init",
         "--network", "host",
         "-v", "/home/melo/apps/obras_jean/validacao:/validacao",
+        "-v", "/home/melo/apps/obras_jean/validacao/arquivos:/home/melo/apps/obras_jean/validacao/arquivos:ro",
         "mcr.microsoft.com/playwright/mcp",
         "--output-dir", "/validacao/capturas",
         "--viewport-size", "1366,768"

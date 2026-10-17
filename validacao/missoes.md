@@ -33,12 +33,12 @@ São 19h, você chegou da obra da Marina. No bolso:
 
 1. Nota do **Depósito São José**: 50 sacos de cimento CP-II (R$ 1.900,00), 8 m³ de areia
    média (R$ 1.120,00), 200 blocos cerâmicos (R$ 380,00). Total R$ 3.400,00, fase
-   Fundação. Anexe `/validacao/arquivos/nota-fiscal-deposito.pdf`.
+   Fundação. Anexe `/home/melo/apps/obras_jean/validacao/arquivos/nota-fiscal-deposito.pdf`.
 2. Pagamento ao empreiteiro **Zé Pedreiro**: R$ 2.800,00, mão de obra da semana na fundação, pago no Pix.
 3. **Aço CA-50** comprado da **Gerdau Distribuidora**: R$ 4.250,75, fase Fundação, boleto
    que vence daqui a 10 dias (ainda não pago).
 4. Caçamba de entulho da **Remove Entulhos**: R$ 450,00, canteiro.
-5. Uma foto do baldrame concretado (`/validacao/arquivos/foto-obra-baldrame.jpg`) com uma
+5. Uma foto do baldrame concretado (`/home/melo/apps/obras_jean/validacao/arquivos/foto-obra-baldrame.jpg`) com uma
    anotação no diário: "Baldrame concretado, choveu à tarde, equipe parou às 15h".
 6. Uma pendência: "Comprar impermeabilizante antes de subir a alvenaria".
 7. Erre de propósito em um lançamento (valor errado ou fase errada) e corrija.

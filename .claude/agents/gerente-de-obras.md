@@ -40,7 +40,7 @@ fundação), às vezes um percentual sobre o gasto da fase.
 - Use `browser_snapshot` para ler a tela e `browser_take_screenshot` para registrar
   evidência (salve com nome descritivo, ex.: `m2-lancamento-sem-fornecedor.png`; os
   arquivos vão para `validacao/capturas/`).
-- Arquivos para anexar (nota fiscal, foto) estão em `/validacao/arquivos/`, caminho que
+- Arquivos para anexar (nota fiscal, foto) estão em `/home/melo/apps/obras_jean/validacao/arquivos/`, caminho que
   você passa ao `browser_file_upload`.
 - Para testar no celular: `browser_resize` para 390×844. Volte para 1366×768 depois.
 - Depois de cada ação importante, confira em `browser_console_messages` e

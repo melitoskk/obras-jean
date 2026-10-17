@@ -14,13 +14,16 @@
 | R1-A17 | Miniatura da foto no diário e foto do diário contando na Galeria | pequeno |
 | R1-A18 | Validar faixa de ano nas datas (ex.: 2000-2100) | pequeno |
 | R1-A19 | Área da obra (m²) e R$/m² | pequeno |
-| R1-amb | `.mcp.json`: montar o projeto no mesmo caminho do host para o upload alcançar `validacao/arquivos/` (exige reiniciar o Claude Code) | pequeno |
 
 ## Perguntas ao Jean
-1. **Taxa de administração (R1-A2).** Hoje é um % único para a obra toda, sobre o custo de cada fase (decidido em 03/10). No seu contrato com a Marina é R$ 5.000 fixos na fundação e 10% nas outras fases. Você precisa escolher, por fase, entre valor fixo e percentual? O fixo é devido de uma vez quando a fase começa, quando termina ou proporcional ao gasto? E a taxa deve ser calculada sobre o que foi lançado ou só sobre o que já foi pago?
-2. **Recebimentos do cliente (R1-A6).** Hoje toda entrada do cliente precisa cair numa fase. Você prefere poder lançar a entrada "para a obra toda"? E quer cadastrar o valor do contrato (custo + taxa) para o sistema mostrar "quanto o cliente ainda deve"?
-3. **Digitação de valor (R1-A3).** Os campos de dinheiro funcionam como caixa de banco: digitar 450 dá R$ 4,50, e para R$ 450,00 se digita 45000. A quantidade já mudou ("50" = 50 sacos). Quer que o dinheiro também funcione como planilha (450 = R$ 450,00, centavos com vírgula)?
-4. **"Salvar e continuar" (R1-A8).** Na rajada de notas o sistema mantém fornecedor, vencimento e o "Pago" da nota anterior. Uma nota em aberto seguida de uma paga pode sair errada se ninguém reparar. Prefere que vencimento e "Pago" voltem ao padrão (paga hoje, sem vencimento) a cada nota?
+1. **Taxa de administração (R1-A2)**: em aberto só o detalhe (ver "Respostas" abaixo): o tipo (fixo ou %) se define no orçamento ou só ao fechar a fase?
+2. **Recebimentos (R1-A6)**: em aberto o que muda na tela do Fluxo de caixa e se cadastra o valor do contrato para mostrar "quanto falta".
+
+### Respostas do Jean (17/10/2026)
+- **R1-A2 Taxa:** cada fase escolhe valor fixo OU percentual. A taxa é devida ao **fechar a fase**. O percentual incide **só sobre o que foi pago**.
+- **R1-A6 Recebimentos:** o pagamento do cliente é lançado numa fase, mas o dinheiro é do **caixa da obra**.
+- **R1-A3 Digitação:** dinheiro continua como caixa eletrônico (450 = R$ 4,50). Nada a mudar.
+- **R1-A8 Rajada:** deixou para mim. Decidido: cada nota recomeça paga hoje, sem vencimento (commit 80a7bac).
 
 ---
 
@@ -44,3 +47,5 @@ Senha do admin trocada pelo agente para `Jean@Obras2026`.
 **Perguntas abertas:** A2 (taxa por fase), A6 (entrada sem fase / a receber), A3 (dinheiro como planilha), A8 (vencimento e Pago na rajada).
 **Não procede:** A18, a parte dos "8 meses" (01/10 a 30/06 são 8 meses e 29 dias, regra documentada).
 **Ambiente:** a nota fiscal e a foto do baldrame não foram anexadas porque o Playwright não alcança `validacao/arquivos/`; o upload foi testado com outra imagem e funcionou.
+
+**Depois da rodada (17/10/2026):** A8 completado com a decisão acima (80a7bac). Ambiente: `.mcp.json` passa a montar `validacao/arquivos/` no mesmo caminho do host, e as missões e o agente usam `/home/melo/apps/obras_jean/validacao/arquivos/`. Vale depois de reiniciar o Claude Code.
