@@ -338,6 +338,15 @@ r.patch('/api/fases/:id', (req, res) => {
     sets.push('percentual=?')
     vals.push(p == null ? null : Math.max(0, Math.round(Number(p) || 0)))
   }
+  // Taxa de administração da fase, escolhida ao concluir. Tipo null tira a regra.
+  if ('taxa_tipo' in req.body) {
+    const tipo = req.body.taxa_tipo ?? null
+    if (tipo !== null && tipo !== 'fixo' && tipo !== 'pct') {
+      return res.status(400).json({ erro: "taxa_tipo deve ser 'fixo', 'pct' ou null" })
+    }
+    sets.push('taxa_tipo=?', 'taxa_valor=?')
+    vals.push(tipo, tipo === null ? null : Math.max(0, Math.round(Number(req.body.taxa_valor) || 0)))
+  }
   if (!sets.length) return res.status(400).json({ erro: 'nada pra alterar' })
   const r2 = db.prepare(`UPDATE fase SET ${sets.join(',')} WHERE id=?`).run(...vals, Number(req.params.id))
   if (!r2.changes) return res.status(404).json({ erro: 'fase não encontrada' })
@@ -432,8 +441,10 @@ export function caixaDaObra(obra_id) {
     // As fases vêm junto porque o Fluxo de caixa não passa pelo orçamento e precisa
     // do nome delas. A tela do orçamento já tem as suas e ignora estas.
     fases: db.prepare(
-      'SELECT id, codigo, nome, ordem, concluida_em FROM fase WHERE obra_id = ? AND inativa = 0 ORDER BY ordem, id',
+      'SELECT id, codigo, nome, ordem, concluida_em, taxa_tipo, taxa_valor FROM fase WHERE obra_id = ? AND inativa = 0 ORDER BY ordem, id',
     ).all(obra_id),
+    // O % da estimativa viva só sugere a taxa ao concluir uma fase sem regra ainda.
+    taxa_estimativa: db.prepare('SELECT taxa_adm FROM orcamento WHERE obra_id = ? AND ativo = 1').get(obra_id)?.taxa_adm ?? 0,
     // tipo_custo e os dois checks do fornecedor: lançar mão de obra lista prestador
     // primeiro (UPDATE.md §10.1, ordenarFornecedores).
     insumos: db.prepare('SELECT id, nome, unidade, preco_base, tipo_custo FROM insumo ORDER BY nome').all(),

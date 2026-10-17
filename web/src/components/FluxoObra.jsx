@@ -7,9 +7,10 @@ import EmptyState from '../ui/EmptyState'
 import Badge from '../ui/Badge'
 import Confirm from '../ui/Confirm'
 import { Select } from '../ui/Form'
+import { MoneyInput, PctInput } from '../ui/Numeros'
 import ExtratoFase from './ExtratoFase'
 import { getFluxo, concluirFase } from '../lib/api'
-import { formatMoeda, formatData, hoje } from '../lib/format'
+import { formatMoeda, formatPct, formatData, hoje } from '../lib/format'
 
 // Fluxo de caixa da obra. Todo lançamento - entrada ou saída - pertence a uma FASE,
 // então o caixa da obra é a soma dos caixas das fases; não existe lançamento solto.
@@ -36,6 +37,8 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
   const [verConcluidas, setVerConcluidas] = useState(false)
   // Depois de concluir: { proxima } = perguntando pra onde ir.
   const [seguir, setSeguir] = useState(null)
+  // Antes de concluir: { tipo, valor } = escolhendo a taxa de administração da fase.
+  const [fechando, setFechando] = useState(null)
 
   const carregar = useCallback(
     () => getFluxo(obraId).then(setDados).catch(() => setDados(null)),
@@ -69,9 +72,25 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
   const posAtiva = fases.findIndex((f) => f.id === ativa?.id)
   const sugerida = pendentes.find((f) => fases.indexOf(f) > posAtiva) ?? pendentes[0]
 
+  // A taxa de administração se escolhe ao concluir (decidido com o Jean em 17/10/2026):
+  // valor fixo ou % sobre o que foi PAGO na fase. Vem a regra que a fase já teve (foi
+  // reaberta) ou o % da estimativa como sugestão.
+  function pedirTaxa() {
+    setFechando(ativa.taxa_tipo
+      ? { tipo: ativa.taxa_tipo, valor: ativa.taxa_valor ?? 0 }
+      : { tipo: 'pct', valor: dados.taxa_estimativa ?? 0 })
+  }
+  const pagoDa = (f) => de(f.id).realizado - de(f.id).aberto
+  // A mesma conta de `taxaDevida` (api/rotas/relatorio.js): inteiro × inteiro, depois divide.
+  const previa = (t) => (t.tipo === 'fixo' ? t.valor : t.tipo === 'pct' ? Math.round((pagoDa(ativa) * t.valor) / 10000) : 0)
+
   async function concluir() {
+    const t = fechando
+    setFechando(null)
     try {
-      await concluirFase(ativa.id, hoje())
+      await concluirFase(ativa.id, hoje(), {
+        taxa_tipo: t.tipo === 'sem' ? null : t.tipo, taxa_valor: t.tipo === 'sem' ? null : t.valor,
+      })
       await carregar()
     } catch {
       return onFaixa?.({ tipo: 'erro', texto: 'Não foi possível concluir a fase.' })
@@ -179,10 +198,17 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
               {ativa.concluida_em ? (
                 <>
                   <Badge cor="sucesso">Concluída em {formatData(ativa.concluida_em)}</Badge>
+                  {ativa.taxa_tipo && (
+                    <span className="text-rotulo">
+                      Taxa: {ativa.taxa_tipo === 'fixo'
+                        ? `R$ ${formatMoeda(ativa.taxa_valor)}`
+                        : `${formatPct(ativa.taxa_valor)}% do pago = R$ ${formatMoeda(previa({ tipo: 'pct', valor: ativa.taxa_valor }))}`}
+                    </span>
+                  )}
                   <Botao icone={RotateCcw} onClick={reabrir}>Reabrir fase</Botao>
                 </>
               ) : (
-                <Botao icone={CheckCircle2} onClick={concluir}>Concluir fase</Botao>
+                <Botao icone={CheckCircle2} onClick={pedirTaxa}>Concluir fase</Botao>
               )}
             </div>
           )}
@@ -197,6 +223,40 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
           />
         </div>
       </div>
+
+      <Confirm
+        open={!!fechando}
+        danger={false}
+        title={ativa && `Concluir ${ativa.codigo} - ${ativa.nome}`}
+        message={fechando && (
+          <span className="flex flex-col gap-2">
+            Taxa de administração desta fase:
+            {[['pct', 'Percentual sobre o pago'], ['fixo', 'Valor fixo'], ['sem', 'Sem taxa']].map(([tipo, rotulo]) => (
+              <label key={tipo} className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="taxa_tipo"
+                  checked={fechando.tipo === tipo}
+                  onChange={() => setFechando({ tipo, valor: tipo === 'pct' ? dados.taxa_estimativa ?? 0 : 0 })}
+                />
+                <span className="w-[150px]">{rotulo}</span>
+                {fechando.tipo === tipo && tipo === 'pct' && (
+                  <><PctInput className="w-[80px]" value={fechando.valor} onChange={(valor) => setFechando({ tipo, valor })} />%</>
+                )}
+                {fechando.tipo === tipo && tipo === 'fixo' && (
+                  <>R$ <MoneyInput className="w-[110px]" value={fechando.valor} onChange={(valor) => setFechando({ tipo, valor })} /></>
+                )}
+              </label>
+            ))}
+            <span className="text-rotulo">
+              Pago na fase: R$ {formatMoeda(pagoDa(ativa))} · Taxa devida: <b className="text-[#333]">R$ {formatMoeda(previa(fechando))}</b>
+            </span>
+          </span>
+        )}
+        confirmLabel="Concluir fase"
+        onConfirm={concluir}
+        onCancel={() => setFechando(null)}
+      />
 
       <Confirm
         open={!!seguir}

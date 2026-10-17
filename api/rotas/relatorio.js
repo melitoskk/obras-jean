@@ -79,10 +79,20 @@ r.get('/api/relatorios/pagamentos', (req, res) => {
   res.json(pagamentos({ por, obra: obraDe(req), de: dataDe(req.query.de), ate: dataDe(req.query.ate) }))
 })
 
+// Taxa de administração devida pela fase (decidido com o Jean em 17/10/2026): só
+// existe com a fase CONCLUÍDA; 'fixo' é o valor, 'pct' incide sobre o que foi PAGO.
+// Nota paga depois de concluir entra na conta: a nota atrasada é da fase (§11.2).
+export function taxaDevida({ concluida_em, taxa_tipo, taxa_valor }, pago) {
+  if (!concluida_em || !taxa_tipo) return 0
+  // Inteiro × inteiro antes de dividir: centavo × ponto-base não passa de 2^53.
+  return taxa_tipo === 'fixo' ? taxa_valor ?? 0 : Math.round((pago * (taxa_valor ?? 0)) / 10000)
+}
+
 // ── 2 e 5. Estimado × realizado, e a taxa de administração ──────────────────────────
 // Uma obra por vez: o estimado é de UMA estimativa (a viva), e somar fases de obras
 // diferentes não responde pergunta nenhuma. O relatório 5 é este mesmo payload com a
-// taxa aplicada (UPDATE.md §4): taxa × estimado contra taxa × realizado, por fase.
+// taxa aplicada (UPDATE.md §4): taxa × estimado contra taxa × realizado, por fase,
+// mais a taxa DEVIDA de cada fase concluída (`taxaDevida`, a regra escolhida ao concluir).
 //
 // Por fase, os serviços; por serviço, os lançamentos. A chave do serviço é o id de
 // CATÁLOGO, que é o que a saída grava (§6). Serviço sem catálogo (o `Geral` do valor
@@ -94,7 +104,7 @@ export function estimadoRealizado(obraId) {
 
   // Fase inativa entra se tiver lançamento: sumir com ela sumiria com dinheiro gasto.
   const fases = db.prepare(`
-    SELECT f.id, f.codigo, f.nome, f.concluida_em FROM fase f
+    SELECT f.id, f.codigo, f.nome, f.concluida_em, f.taxa_tipo, f.taxa_valor FROM fase f
     WHERE f.obra_id = ? AND (f.inativa = 0 OR EXISTS (SELECT 1 FROM saida s WHERE s.fase_id = f.id))
     ORDER BY f.codigo, f.ordem, f.id
   `).all(obraId)
@@ -135,10 +145,12 @@ export function estimadoRealizado(obraId) {
     // "Fase inteira" por último: é o resto, não um serviço.
     const lista = [...servicos.values()].sort((a, b) =>
       (a.chave === INTEIRA) - (b.chave === INTEIRA) || (a.codigo ?? 0) - (b.codigo ?? 0))
+    const pago = saidas.filter((s) => s.fase_id === f.id && s.pago_em).reduce((a, s) => a + s.valor, 0)
     return {
       id: f.id, codigo: f.codigo, nome: f.nome, concluida_em: f.concluida_em,
       estimado: lista.reduce((a, s) => a + s.estimado, 0),
       realizado: lista.reduce((a, s) => a + s.realizado, 0),
+      pago, taxa_tipo: f.taxa_tipo, taxa_valor: f.taxa_valor, taxa_devida: taxaDevida(f, pago),
       servicos: lista,
     }
   })

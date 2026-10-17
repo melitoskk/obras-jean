@@ -205,6 +205,11 @@ for (const [coluna, tipo] of [
   // catálogo, resolvido na leitura: a fase só grava número quando alguém o edita, e
   // por isso nenhum INSERT de fase (modal, semente) precisa saber que ele existe.
   ['percentual', 'INTEGER'],
+  // Taxa de administração DA FASE (decidido com o Jean em 17/10/2026): escolhida ao
+  // concluir, 'fixo' (taxa_valor em centavos) ou 'pct' (ponto-base sobre o PAGO da fase).
+  // NULL = sem regra. Só é devida com a fase concluída - a conta mora em relatorio.js.
+  ['taxa_tipo', 'TEXT'],
+  ['taxa_valor', 'INTEGER'],
 ]) {
   if (!db.prepare('PRAGMA table_info(fase)').all().some((c) => c.name === coluna)) {
     db.exec(`ALTER TABLE fase ADD COLUMN ${coluna} ${tipo}`)

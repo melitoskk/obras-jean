@@ -66,6 +66,17 @@ assert.equal(orc.fases.find((x) => x.id === faseFund.id).percentual, 1200, 'null
 await chamar('PATCH', `/api/fases/${faseFund.id}`, {}, 400)
 await chamar('PATCH', `/api/fases/${faseFund.id}`, { concluida_em: '01/10/2026' }, 400)
 
+// Taxa da fase, escolhida ao concluir: fixo em centavos, percentual em ponto-base.
+await chamar('PATCH', `/api/fases/${faseFund.id}`, { taxa_tipo: 'fixo', taxa_valor: 5_000_00 })
+let tx = db.prepare('SELECT taxa_tipo, taxa_valor FROM fase WHERE id=?').get(faseFund.id)
+assert.deepEqual({ ...tx }, { taxa_tipo: 'fixo', taxa_valor: 5_000_00 })
+await chamar('PATCH', `/api/fases/${faseFund.id}`, { taxa_tipo: 'pct', taxa_valor: -5 })
+assert.equal(db.prepare('SELECT taxa_valor FROM fase WHERE id=?').get(faseFund.id).taxa_valor, 0, 'sem taxa negativa')
+await chamar('PATCH', `/api/fases/${faseFund.id}`, { taxa_tipo: 'outro', taxa_valor: 1 }, 400)
+await chamar('PATCH', `/api/fases/${faseFund.id}`, { taxa_tipo: null })
+tx = db.prepare('SELECT taxa_tipo, taxa_valor FROM fase WHERE id=?').get(faseFund.id)
+assert.deepEqual({ ...tx }, { taxa_tipo: null, taxa_valor: null }, 'null tira a regra')
+
 // --- 3. a taxa de administração ---------------------------------------------------
 await chamar('PATCH', `/api/orcamento/${orcId}`, { taxa_adm: 1500.4 })
 orc = await chamar('GET', `/api/orcamento/${orcId}`)

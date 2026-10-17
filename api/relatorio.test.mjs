@@ -90,6 +90,22 @@ assert.deepEqual(sv, {
 assert.equal(f.servicos.at(-1).chave, 'fase', 'fase inteira vem por último')
 assert.equal(estimadoRealizado(999), null)
 
+// ── Taxa de administração por fase (decidido com o Jean em 17/10/2026) ──
+// Cada fase escolhe, ao ser CONCLUÍDA, valor fixo ou percentual. O percentual incide
+// só sobre o que foi PAGO na fase. Fase em andamento não deve taxa nenhuma.
+// Na fundação da Casa: 1.300 pago + 5.000 em aberto + 700 pago -> pago 2.000.
+const taxaDe = () => estimadoRealizado(obra).fases[0]
+assert.equal(taxaDe().pago, 2_000_00, 'pago conta só as saídas com pago_em')
+db.prepare("UPDATE fase SET taxa_tipo='pct', taxa_valor=1000 WHERE id=?").run(fund)
+assert.equal(taxaDe().taxa_devida, 0, 'fase em andamento não deve taxa, mesmo com a regra escolhida')
+db.prepare("UPDATE fase SET concluida_em='2026-10-10' WHERE id=?").run(fund)
+assert.equal(taxaDe().taxa_devida, 200_00, '10% sobre o PAGO (2.000), não sobre o lançado (7.000)')
+db.prepare("UPDATE fase SET taxa_tipo='fixo', taxa_valor=5_000_00 WHERE id=?").run(fund)
+assert.equal(taxaDe().taxa_devida, 5_000_00, 'fixo é o valor, qualquer que seja o gasto')
+db.prepare("UPDATE fase SET taxa_tipo=NULL, taxa_valor=NULL WHERE id=?").run(fund)
+assert.equal(taxaDe().taxa_devida, 0, 'concluída sem regra não deve taxa')
+db.prepare("UPDATE fase SET concluida_em=NULL WHERE id=?").run(fund)
+
 // ── Extrato da fase ──
 // Aporte no mesmo dia da nota de 02/10, lançado DEPOIS dela: vem depois. O saldo corre
 // pela data da nota e fecha igual ao Saldo do topo (entradas − tudo lançado).

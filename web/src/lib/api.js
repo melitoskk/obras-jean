@@ -63,7 +63,8 @@ export const getInsumos = () => req('GET', '/api/insumos')
 export const getFluxo = (id) => req('GET', `/api/obra/${id}/fluxo`)
 // Visão do cliente (UPDATE.md §12): só somas por fase e por mês, e fotos.
 export const getVisao = (id) => req('GET', `/api/obra/${id}/visao`)
-export const concluirFase = (id, concluida_em) => req('PATCH', `/api/fases/${id}`, { concluida_em })
+// `taxa` = { taxa_tipo, taxa_valor }: a taxa de administração escolhida ao concluir.
+export const concluirFase = (id, concluida_em, taxa = {}) => req('PATCH', `/api/fases/${id}`, { concluida_em, ...taxa })
 // Percentual de referência da fase (UPDATE.md §2), ponto-base; null = padrão do catálogo.
 export const patchFase = (id, dados) => req('PATCH', `/api/fases/${id}`, dados)
 export const criarInsumo = (nome) => req('POST', '/api/insumos', { nome })

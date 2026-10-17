@@ -319,8 +319,9 @@ function Credor({ filtro, setFiltro }) {
 }
 
 // ── 5. Taxa de administração ────────────────────────────────────────────────────────
-// UPDATE.md §4: previsto = taxa × estimado, realizado = taxa × gasto, por fase. A taxa é
-// a da estimativa viva; a conta é a MESMA do rodapé da Estimativa (mult sobre o custo).
+// A taxa DEVIDA é por fase, escolhida ao concluir (decidido com o Jean em 17/10/2026):
+// valor fixo ou % sobre o que foi PAGO na fase; quem calcula é o servidor (`taxaDevida`).
+// A prevista continua a da estimativa (UPDATE.md §4): % único × estimado, só referência.
 function Administracao({ filtro, setFiltro, opcoesObra }) {
   const obra = filtro('obra')
   const dados = useEstimado(obra)
@@ -328,9 +329,10 @@ function Administracao({ filtro, setFiltro, opcoesObra }) {
   const adm = (v) => mult(taxa / 10000, v)
 
   const fases = dados?.fases ?? []
-  const estimado = somaFases(fases, 'estimado')
-  const realizado = somaFases(fases, 'realizado')
-  const total = { estimado, realizado, admPrevista: adm(estimado), admRealizada: adm(realizado) }
+  const admPrevista = adm(somaFases(fases, 'estimado'))
+  const devida = somaFases(fases, 'taxa_devida')
+  const semRegra = fases.filter((f) => f.concluida_em && !f.taxa_tipo).length
+  const regra = (f) => (!f.taxa_tipo ? '' : f.taxa_tipo === 'fixo' ? 'Valor fixo' : `${formatPct(f.taxa_valor)}% do pago`)
 
   return (
     <>
@@ -338,7 +340,7 @@ function Administracao({ filtro, setFiltro, opcoesObra }) {
         <EscolhaObra filtro={filtro} setFiltro={setFiltro} opcoesObra={opcoesObra} />
         {dados?.estimativa && <span className="text-rotulo">Taxa da estimativa {dados.estimativa.numero}: <b className="text-[#333]">{formatPct(taxa)}%</b></span>}
         {dados && !dados.estimativa && <Badge cor="aviso">Obra sem estimativa</Badge>}
-        {dados?.estimativa && !taxa && <Badge cor="aviso">Taxa de administração não informada na estimativa</Badge>}
+        {semRegra > 0 && <Badge cor="aviso">{semRegra} fase(s) concluída(s) sem taxa</Badge>}
       </Filtros>
       {!obra ? <SemObra /> : (
         <Grid
@@ -357,20 +359,15 @@ function Administracao({ filtro, setFiltro, opcoesObra }) {
             },
             { chave: 'estimado', titulo: 'Estimado (R$)', largura: 115, align: 'right', render: (f) => <Rs v={f.estimado} /> },
             { chave: 'admPrev', titulo: 'Adm. prevista (R$)', largura: 125, align: 'right', render: (f) => <Rs v={adm(f.estimado)} /> },
-            { chave: 'realizado', titulo: 'Realizado (R$)', largura: 115, align: 'right', render: (f) => <Rs v={f.realizado} /> },
-            { chave: 'admReal', titulo: 'Adm. realizada (R$)', largura: 130, align: 'right', render: (f) => <Rs v={adm(f.realizado)} /> },
-            {
-              chave: 'dif', titulo: 'Diferença adm. (R$)', largura: 130, align: 'right',
-              render: (f) => <Diferenca estimado={adm(f.estimado)} realizado={adm(f.realizado)} />,
-            },
+            { chave: 'pago', titulo: 'Pago (R$)', largura: 115, align: 'right', render: (f) => <Rs v={f.pago} /> },
+            { chave: 'regra', titulo: 'Taxa da fase', largura: 120, render: (f) => (f.concluida_em ? regra(f) || 'Sem taxa' : <span className="text-[#999]">ao concluir</span>) },
+            { chave: 'devida', titulo: 'Taxa devida (R$)', largura: 125, align: 'right', render: (f) => (f.concluida_em ? <Rs v={f.taxa_devida} /> : null) },
           ]}
           rodape={
             <TotalGrid>
-              Adm. prevista: <b>R$ {formatMoeda(total.admPrevista)}</b>
-              {' '}({formatPct(Math.round(pct(total.admPrevista, estimado + total.admPrevista) * 100))}% do total estimado)
+              Adm. prevista pela estimativa: <b>R$ {formatMoeda(admPrevista)}</b>
               <span className="mx-3 text-[#bbb]">|</span>
-              Adm. realizada: <b>R$ {formatMoeda(total.admRealizada)}</b>
-              {' '}({formatPct(Math.round(pct(total.admRealizada, realizado + total.admRealizada) * 100))}% do total realizado)
+              Taxa devida (fases concluídas): <b>R$ {formatMoeda(devida)}</b>
             </TotalGrid>
           }
         />
