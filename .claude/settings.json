@@ -1,0 +1,21 @@
+{
+  "enabledMcpjsonServers": ["playwright"],
+  "permissions": {
+    "allow": [
+      "mcp__playwright",
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Edit(api/**)",
+      "Edit(web/src/**)",
+      "Edit(validacao/**)",
+      "Write(api/**)",
+      "Write(web/src/**)",
+      "Write(validacao/**)"
+    ]
+  }
+}
