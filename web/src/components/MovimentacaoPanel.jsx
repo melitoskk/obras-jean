@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Save, Trash2, Plus, Minus } from 'lucide-react'
 import Registro from '../ui/Registro'
 import Combobox from '../ui/Combobox'
@@ -52,6 +52,10 @@ export default function MovimentacaoPanel({
   const [faixa, setFaixa] = useState(null)
   const [pedindoExcluir, setPedindoExcluir] = useState(false)
   const [seed, setSeed] = useState(0) // remonta o editor de itens depois de limpar
+  // Trava de envio: clique duplo em Salvar mandava dois POST e lançava a nota duas vezes.
+  // O ref segura o segundo clique antes de o botão desabilitado chegar à tela.
+  const salvandoRef = useRef(false)
+  const [salvando, setSalvando] = useState(false)
 
   // Com itens, quem manda no valor é a soma deles - não existe "o valor da nota" e
   // "a soma dos itens" divergindo, isso era uma nota com dois números brigando. Sem
@@ -110,6 +114,7 @@ export default function MovimentacaoPanel({
   }
 
   async function gravar(fechar) {
+    if (salvandoRef.current) return
     if (!faseId) return setFaixa({ tipo: 'aviso', texto: 'Escolha a fase.' })
     if (!valorFinal) {
       return setFaixa({
@@ -117,6 +122,8 @@ export default function MovimentacaoPanel({
         texto: itensMandam ? 'Lance ao menos um item com valor.' : 'Informe o valor.',
       })
     }
+    salvandoRef.current = true
+    setSalvando(true)
     try {
       await onSalvar({
         tipo,
@@ -147,6 +154,9 @@ export default function MovimentacaoPanel({
       setFaixa({ tipo: 'sucesso', texto: 'Lançado.' })
     } catch {
       setFaixa({ tipo: 'erro', texto: 'Não foi possível salvar.' })
+    } finally {
+      salvandoRef.current = false
+      setSalvando(false)
     }
   }
 
@@ -176,8 +186,8 @@ export default function MovimentacaoPanel({
             )
           }
         >
-          {!edicao && <Botao variante="acento" icone={Save} onClick={() => gravar(false)}>Salvar e continuar</Botao>}
-          <Botao variante="acento" icone={Save} onClick={() => gravar(true)}>Salvar e fechar</Botao>
+          {!edicao && <Botao variante="acento" icone={Save} disabled={salvando} onClick={() => gravar(false)}>Salvar e continuar</Botao>}
+          <Botao variante="acento" icone={Save} disabled={salvando} onClick={() => gravar(true)}>Salvar e fechar</Botao>
         </BarraAcao>
       }
     >
