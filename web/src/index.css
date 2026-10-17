@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Linguagem visual das referências em obra_prima_referencias/: ERP denso de ~12px,
+   azul-navy no rail, cinza nos grids, Bootstrap-3 nos inputs. Ver PROJETO-v2.md §2. */
+@theme {
+  --color-rail:        #2a4a6b;
+  --color-rail-ativo:  #3a5f85;
+  --color-rail-borda:  #23405d;
+  --color-titulo:      #2e6da4;
+  --color-acento:      #337ab7;
+  --color-laranja:     #ef9c1e;
+  --color-sucesso:     #5cb85c;
+  --color-perigo:      #d9534f;
+  --color-grade-head:  #d8d8d8;
+  --color-grade-zebra: #f4f4f4;
+  --color-grade-linha: #e2e2e2;
+  --color-borda:       #cccccc;
+  --color-rotulo:      #666666;
+  --color-barra:       #e8e8e8;
+
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  /* Só a marca. Montserrat vem do Google Fonts no index.html; sem ela, cai no sans. */
+  --font-marca: Montserrat, var(--font-sans);
+}
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    line-height: 1.4;
+    color: #333;
+    background: #fff;
+  }
+}
+
+/* Repetir as mesmas 8 utilities em seis primitivos de formulário é o caso em que uma
+   classe CSS ganha. O foco azul-claro é o do Bootstrap 3 - é o que a referência tem. */
+@layer components {
+  .op-input {
+    width: 100%; height: 30px; padding: 0 8px;
+    border: 1px solid var(--color-borda); border-radius: 2px;
+    background: #fff; font-size: 12px; color: #333; outline: none;
+  }
+  .op-input:focus { border-color: #66afe9; box-shadow: 0 0 5px rgba(102, 175, 233, 0.55); }
+  .op-input:disabled, .op-input[readonly] { background: #eeeeee; color: #777; }
+
+  /* Variante de dentro de célula de grid: mais baixa e sem respiro lateral. */
+  .op-cel { height: 22px; padding: 0 5px; border-radius: 2px; text-align: right; }
+}
+
+/* Impressão da Visão do cliente (UPDATE.md §12, Dúvida 15 = tela + imprimir): sai só a
+   `.folha-impressao`, e o "Salvar como PDF" do navegador é o enviável. Esconder por
+   visibilidade (e não display) deixa a árvore do React intacta; os ancestrais da folha
+   perdem altura fixa e rolagem, senão o impresso pararia na altura da janela. */
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body * { visibility: hidden; }
+  .folha-impressao, .folha-impressao * { visibility: visible; }
+  .folha-impressao { position: absolute; top: 0; left: 0; width: 100%; }
+  *:has(.folha-impressao) {
+    display: block !important; position: static !important;
+    height: auto !important; overflow: visible !important;
+  }
+  .so-tela { display: none !important; }
+  .bloco-impressao, .foto-impressao { break-inside: avoid; }
+  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

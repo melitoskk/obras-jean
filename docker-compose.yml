@@ -1,0 +1,26 @@
+services:
+  web:
+    container_name: obras-dev
+    image: obras-dev
+    build: .
+    ports:
+      - "6100:5173"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
+    depends_on:
+      - api
+
+  api:
+    container_name: obras-api
+    build: ./api
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+      - obras-data:/data
+    # --experimental-sqlite: node:sqlite ainda é experimental no Node 22 (só o flag).
+    command: node --experimental-sqlite --watch server.js
+
+volumes:
+  obras-data:

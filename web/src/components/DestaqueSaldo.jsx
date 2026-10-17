@@ -1,0 +1,42 @@
+import { formatMoeda } from '../lib/format'
+
+// O número que se procura primeiro ao abrir a obra (UPDATE.md §11.1), em cima das
+// abas - vale pra todas. São DOIS números, lado a lado e cada um com a sua conta
+// escrita embaixo, porque saldo e caixa usam as mesmas parcelas e trocar um pelo
+// outro dá um valor plausível e errado (o mesmo motivo de fluxo.test.mjs existir).
+// Saldo primeiro e maior: é a pergunta "a obra está no azul?".
+export default function DestaqueSaldo({ saldo = 0, caixa = 0, aPagar = 0 }) {
+  return (
+    <div className="flex flex-wrap items-stretch gap-2 pb-2">
+      <Indicador rotulo="Saldo" conta="entradas − tudo lançado" valor={saldo} grande />
+      <Indicador rotulo="Caixa" conta="entradas − só o que foi pago" valor={caixa} />
+      {/* A diferença entre os dois, quando existe: é ela que explica por que não batem. */}
+      {aPagar > 0 && (
+        <div className="flex min-w-[140px] flex-col justify-center border border-grade-linha bg-[#fdf6ea] px-3 py-1.5">
+          <span className="text-rotulo">A pagar</span>
+          <b className="text-[17px] leading-tight tabular-nums text-laranja">R$ {formatMoeda(aPagar)}</b>
+          <span className="text-[11px] text-[#888]">lançado, ainda sem o Pago</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Sinal claro: verde no azul, vermelho no negativo, e o sinal escrito - cor sozinha
+// some na tela projetada e em quem não distingue vermelho de verde.
+function Indicador({ rotulo, conta, valor, grande }) {
+  const negativo = valor < 0
+  return (
+    <div
+      className={`flex min-w-[170px] flex-col justify-center border px-3 py-1.5 ${
+        negativo ? 'border-[#f0c7c5] bg-[#fbe6e5]' : 'border-[#c3e2c3] bg-[#eef8ee]'
+      }`}
+    >
+      <span className="text-rotulo">{rotulo}</span>
+      <b className={`leading-tight tabular-nums ${grande ? 'text-[24px]' : 'text-[17px]'} ${negativo ? 'text-perigo' : 'text-[#3d833d]'}`}>
+        {negativo ? '− ' : '+ '}R$ {formatMoeda(Math.abs(valor))}
+      </b>
+      <span className="text-[11px] text-[#888]">{conta}</span>
+    </div>
+  )
+}
