@@ -46,9 +46,10 @@ export default function MovimentacaoPanel({
   const [linhas, setLinhas] = useState(
     mov?.itens?.length ? mov.itens.map((l) => ({ ...l })) : [{ ...linhaVazia }],
   )
-  // Saída nasce com a grade de itens aberta: atribuir item/fornecedor/qtd é o
-  // lançamento, não um detalhe opcional escondido atrás de um link.
-  const [mostrarItens, setMostrarItens] = useState(tipo === 'saida' || !!mov?.itens?.length)
+  // Saída NOVA nasce com a grade de itens aberta: atribuir item/fornecedor/qtd é o
+  // lançamento, não um detalhe opcional escondido atrás de um link. Na edição abre como
+  // foi lançada - senão a saída sem itens abria com a grade vazia e o valor em 0,00.
+  const [mostrarItens, setMostrarItens] = useState(mov ? !!mov.itens?.length : tipo === 'saida')
   const [faixa, setFaixa] = useState(null)
   const [pedindoExcluir, setPedindoExcluir] = useState(false)
   const [seed, setSeed] = useState(0) // remonta o editor de itens depois de limpar
