@@ -111,6 +111,14 @@ assert.equal(concluida.fases.find((f) => f.id === fundacao).concluida_em, '2026-
 assert.equal(concluida.fases.length, 3, 'concluída não some da lista')
 assert.equal(concluida.porFase.find((p) => p.fase_id === fundacao).realizado, 26_000_00, 'lançar em concluída soma')
 
+// A observação do pagamento ("pix", "cheque 4412") vem no payload: é dele que o
+// painel abre pra editar, e sem ela o campo voltava vazio e o salvar apagava a gravada.
+const comObs = Number(
+  db.prepare("INSERT INTO saida (fase_id, valor, data, pago_em, pago_obs, criado_em) VALUES (?,?,'2026-08-11','2026-08-11','pix',?)")
+    .run(estrutura, 2_800_00, instante()).lastInsertRowid,
+)
+assert.equal(caixaDaObra(obraId).saidas.find((s) => s.id === comObs).pago_obs, 'pix', 'pago_obs some do fluxo')
+
 db.close()
 rmSync(dir, { recursive: true, force: true })
 console.log('ok - saldo por fase, caixa por fase, soma da obra e ordem de lançamento')

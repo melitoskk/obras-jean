@@ -384,7 +384,7 @@ export function caixaDaObra(obra_id) {
 
   const saidasRaw = db.prepare(`
     SELECT s.id, s.numero, s.fase_id, s.valor, s.data, s.descricao, s.anexo,
-           s.fornecedor_id, s.vencimento, s.pago_em, s.criado_em,
+           s.fornecedor_id, s.vencimento, s.pago_em, s.pago_obs, s.criado_em,
            s.servico_catalogo_id, sc.nome AS servico_nome
     FROM saida s JOIN fase f ON f.id = s.fase_id
     LEFT JOIN servico_catalogo sc ON sc.id = s.servico_catalogo_id
