@@ -30,7 +30,8 @@ export default function Registro({
     // Em página, Esc não fecha: não há overlay pra dispensar, e "Esc me joga pra
     // lista" no meio de um formulário é o mesmo estrago que o clique fora.
     if (!aberto || !onFechar || pagina) return
-    const onKey = (e) => e.key === 'Escape' && onFechar()
+    // `defaultPrevented`: um campo dentro já usou o Esc (a lista do Combobox, por exemplo).
+    const onKey = (e) => e.key === 'Escape' && !e.defaultPrevented && onFechar()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [aberto, onFechar, pagina])

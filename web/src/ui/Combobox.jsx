@@ -66,7 +66,9 @@ export default function Combobox({
     if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setHi((h) => Math.min(h + 1, rows.length - 1)) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)) }
     else if (e.key === 'Enter') { e.preventDefault(); choose(rows[hi]) }
-    else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); e.currentTarget.blur() }
+    // Esc com a lista aberta fecha SÓ a lista: o preventDefault avisa o Registro em volta,
+    // que senão fechava o modal inteiro e levava o lançamento digitado junto.
+    else if (e.key === 'Escape') { if (open) e.preventDefault(); setOpen(false); e.currentTarget.blur() }
     else if (e.key === 'Tab' && open) { choose(rows[hi]) } // sem preventDefault: o Tab segue
   }
 
