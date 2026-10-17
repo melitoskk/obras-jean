@@ -98,10 +98,14 @@ export default function MovimentacaoPanel({
     setLinhas([{ ...linhaVazia }])
     setMostrarItens(false)
     setSeed((s) => s + 1)
-    // A observação do pagamento é DA nota ("cheque 4412"): herdada, ia parar na seguinte.
+    // O pagamento é DA nota: cada uma recomeça paga hoje, sem vencimento nem observação.
+    // Herdar o "Em aberto" da anterior punha nota paga em contas a pagar sem ninguém ver
+    // (decidido com o Jean em 17/10/2026, validação rodada 1, A8).
+    setPagoEm(hoje())
+    setVencimento('')
     setPagoObs('')
-    // Fornecedor, serviço, vencimento e o check Pago NÃO limpam: numa rajada de notas, costumam
-    // ser os mesmos da anterior, e é justamente o que ninguém quer redigitar.
+    // Fornecedor e serviço NÃO limpam: numa rajada de notas, costumam ser os mesmos da
+    // anterior, e é justamente o que ninguém quer redigitar.
   }
 
   async function pegarAnexo(file) {
