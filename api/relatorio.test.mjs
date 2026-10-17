@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 const dir = mkdtempSync(join(tmpdir(), 'obras-'))
 process.env.OBRAS_DB = join(dir, 'teste.db')
 const { default: db, novoOrcamento } = await import('./db.js')
-const { pagamentos, estimadoRealizado, extratoFase, DIMENSOES } = await import('./rotas/relatorio.js')
+const { pagamentos, estimadoRealizado, extratoFase, DIMENSOES, aReceberPrevisto } = await import('./rotas/relatorio.js')
 
 const ins = (sql, ...v) => Number(db.prepare(sql).run(...v).lastInsertRowid)
 const obra = ins("INSERT INTO obra (nome, criada_em) VALUES ('Casa', '2026-10-01')")
@@ -105,6 +105,12 @@ assert.equal(taxaDe().taxa_devida, 5_000_00, 'fixo é o valor, qualquer que seja
 db.prepare("UPDATE fase SET taxa_tipo=NULL, taxa_valor=NULL WHERE id=?").run(fund)
 assert.equal(taxaDe().taxa_devida, 0, 'concluída sem regra não deve taxa')
 db.prepare("UPDATE fase SET concluida_em=NULL WHERE id=?").run(fund)
+
+// A receber do cliente, PREVISTO pelo orçado: custo + taxa da estimativa − recebido.
+// A obra da Marina: 360.000 + 10% (36.000) − entrada de 50.000 = 346.000.
+assert.equal(aReceberPrevisto(360_000_00, 1000, 50_000_00), 346_000_00)
+assert.equal(aReceberPrevisto(0, 1000, 0), 0, 'sem orçado não há previsão')
+assert.equal(aReceberPrevisto(100_00, 0, 150_00), -50_00, 'recebeu além do orçado: negativo, não some')
 
 // ── Extrato da fase ──
 // Aporte no mesmo dia da nota de 02/10, lançado DEPOIS dela: vem depois. O saldo corre

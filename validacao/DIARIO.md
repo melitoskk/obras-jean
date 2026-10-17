@@ -16,12 +16,12 @@
 | R1-A19 | Área da obra (m²) e R$/m² | pequeno |
 
 ## Perguntas ao Jean
-1. **Taxa de administração (R1-A2)**: em aberto só o detalhe (ver "Respostas" abaixo): o tipo (fixo ou %) se define no orçamento ou só ao fechar a fase?
-2. **Recebimentos (R1-A6)**: em aberto o que muda na tela do Fluxo de caixa e se cadastra o valor do contrato para mostrar "quanto falta".
+Nenhuma em aberto.
 
 ### Respostas do Jean (17/10/2026)
 - **R1-A2 Taxa:** cada fase escolhe valor fixo OU percentual. A taxa é devida ao **fechar a fase**. O percentual incide **só sobre o que foi pago**.
-- **R1-A6 Recebimentos:** o pagamento do cliente é lançado numa fase, mas o dinheiro é do **caixa da obra**.
+- **R1-A2 detalhe:** o tipo (fixo ou %) se escolhe **só ao concluir a fase**. Feito em f94c4c9.
+- **R1-A6 Recebimentos:** o pagamento do cliente é lançado numa fase, mas o dinheiro é do **caixa da obra**. A tela do Fluxo de caixa **fica como está**. Sobre "quanto falta", pediu minha opinião: entrou o cartão **A receber (previsto)** = orçado + taxa da estimativa − recebido.
 - **R1-A3 Digitação:** dinheiro continua como caixa eletrônico (450 = R$ 4,50). Nada a mudar.
 - **R1-A8 Rajada:** deixou para mim. Decidido: cada nota recomeça paga hoje, sem vencimento (commit 80a7bac).
 
@@ -49,3 +49,4 @@ Senha do admin trocada pelo agente para `Jean@Obras2026`.
 **Ambiente:** a nota fiscal e a foto do baldrame não foram anexadas porque o Playwright não alcança `validacao/arquivos/`; o upload foi testado com outra imagem e funcionou.
 
 **Depois da rodada (17/10/2026):** A8 completado com a decisão acima (80a7bac). Ambiente: `.mcp.json` passa a montar `validacao/arquivos/` no mesmo caminho do host, e as missões e o agente usam `/home/melo/apps/obras_jean/validacao/arquivos/`. Vale depois de reiniciar o Claude Code.
+Depois das respostas: **A2** taxa por fase escolhida ao concluir, fixo ou % sobre o pago (f94c4c9); **A6** cartão "A receber (previsto)" no topo da obra. Os dois foram conferidos no navegador com a obra da Marina: Fundação fixo R$ 5.000,00 / 10% de R$ 6.200,00 pagos = R$ 620,00; a receber R$ 346.000,00. A Fundação ficou reaberta, como estava.

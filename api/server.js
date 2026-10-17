@@ -6,7 +6,7 @@ import { login, logout, quemSou, exigirLogin, exigirPapel, obrasVisiveis, podeOb
 import rotasOrcamento, { CUSTO } from './rotas/orcamento.js'
 import rotasFornecedor from './rotas/fornecedor.js'
 import rotasUsuario from './rotas/usuario.js'
-import rotasRelatorio from './rotas/relatorio.js'
+import rotasRelatorio, { aReceberPrevisto } from './rotas/relatorio.js'
 import rotasVisao from './rotas/visao.js'
 import { enviarCsv, reais, numeroLancamento } from './csv.js'
 
@@ -81,6 +81,7 @@ app.get('/api/obras', (req, res) => {
   const gasto = aggById('SELECT f.obra_id k, SUM(s.valor) v FROM saida s JOIN fase f ON f.id=s.fase_id GROUP BY f.obra_id')
   const pago = aggById('SELECT f.obra_id k, SUM(s.valor) v FROM saida s JOIN fase f ON f.id=s.fase_id WHERE s.pago_em IS NOT NULL GROUP BY f.obra_id')
   const entrada = aggById('SELECT obra_id k, SUM(valor) v FROM entrada GROUP BY obra_id')
+  const taxa = aggById('SELECT obra_id k, taxa_adm v FROM orcamento WHERE ativo = 1')
   res.json(obras.map((o) => ({
     ...o,
     orcado: orcado[o.id] || 0,
@@ -90,6 +91,7 @@ app.get('/api/obras', (req, res) => {
     // Fluxo de caixa, aqui pro destaque no topo da obra (UPDATE.md §11.1).
     saldo: (entrada[o.id] || 0) - (gasto[o.id] || 0),
     caixa: (entrada[o.id] || 0) - (pago[o.id] || 0),
+    aReceber: aReceberPrevisto(orcado[o.id] || 0, taxa[o.id] || 0, entrada[o.id] || 0),
   })))
 })
 

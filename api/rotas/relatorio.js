@@ -88,6 +88,13 @@ export function taxaDevida({ concluida_em, taxa_tipo, taxa_valor }, pago) {
   return taxa_tipo === 'fixo' ? taxa_valor ?? 0 : Math.round((pago * (taxa_valor ?? 0)) / 10000)
 }
 
+// Quanto o cliente ainda deve, PREVISTO pelo orçado (validação, rodada 1, A6): por
+// administração não há preço fechado, então é custo orçado + taxa da estimativa −
+// o que já entrou. Negativo = recebeu além do orçado; não se esconde.
+export function aReceberPrevisto(orcado, taxaAdm, recebido) {
+  return orcado + Math.round((orcado * taxaAdm) / 10000) - recebido
+}
+
 // ── 2 e 5. Estimado × realizado, e a taxa de administração ──────────────────────────
 // Uma obra por vez: o estimado é de UMA estimativa (a viva), e somar fases de obras
 // diferentes não responde pergunta nenhuma. O relatório 5 é este mesmo payload com a

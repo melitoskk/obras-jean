@@ -5,7 +5,7 @@ import { formatMoeda } from '../lib/format'
 // escrita embaixo, porque saldo e caixa usam as mesmas parcelas e trocar um pelo
 // outro dá um valor plausível e errado (o mesmo motivo de fluxo.test.mjs existir).
 // Saldo primeiro e maior: é a pergunta "a obra está no azul?".
-export default function DestaqueSaldo({ saldo = 0, caixa = 0, aPagar = 0 }) {
+export default function DestaqueSaldo({ saldo = 0, caixa = 0, aPagar = 0, aReceber = 0 }) {
   return (
     <div className="flex flex-wrap items-stretch gap-2 pb-2">
       <Indicador rotulo="Saldo" conta="entradas − tudo lançado" valor={saldo} grande />
@@ -16,6 +16,14 @@ export default function DestaqueSaldo({ saldo = 0, caixa = 0, aPagar = 0 }) {
           <span className="text-rotulo">A pagar</span>
           <b className="text-[17px] leading-tight tabular-nums text-laranja">R$ {formatMoeda(aPagar)}</b>
           <span className="text-[11px] text-[#888]">lançado, ainda sem o Pago</span>
+        </div>
+      )}
+      {/* Quanto o cliente ainda deve PELO ORÇADO - previsão, e por isso a conta embaixo. */}
+      {aReceber > 0 && (
+        <div className="flex min-w-[140px] flex-col justify-center border border-grade-linha bg-[#f4f8fc] px-3 py-1.5">
+          <span className="text-rotulo">A receber (previsto)</span>
+          <b className="text-[17px] leading-tight tabular-nums text-titulo">R$ {formatMoeda(aReceber)}</b>
+          <span className="text-[11px] text-[#888]">orçado + taxa − recebido</span>
         </div>
       )}
     </div>
