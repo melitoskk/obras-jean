@@ -13,6 +13,17 @@ export const formatBRL = (centavos) =>
 // "1.300,00" - quantidade em 2 casas, que é como se compra e se mede.
 export const formatQtd = (qtd) => f2.format(qtd ?? 0)
 
+// O que se digitou no campo de quantidade -> número com 2 casas. Vírgula é a decimal; sem
+// vírgula, ponto com 3 dígitos depois é milhar ("1.234") e com outro tanto é decimal
+// ("1234.56", teclado americano). Qualquer outra coisa (R$, espaço, letra) é ignorada.
+export function lerQtd(texto) {
+  let t = (texto ?? '').replace(/[^\d.,]/g, '')
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.').replace(/,/g, '')
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '')
+  const n = parseFloat(t)
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0
+}
+
 // Meio-para-cima, simétrico no negativo. Math.round sozinho erra em -0,5.
 const round = (x) => (x < 0 ? -Math.round(-x) : Math.round(x))
 

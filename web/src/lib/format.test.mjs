@@ -3,7 +3,7 @@
 // O resto é Intl e não vale teste.
 import assert from 'node:assert/strict'
 import {
-  mult, formatQtd, formatMoeda,
+  mult, formatQtd, formatMoeda, lerQtd,
   mascaraDoc, mascaraCep, mascaraTel, duracaoEntre, linkWhats, plural,
 } from './format.js'
 
@@ -61,3 +61,18 @@ assert.equal(plural(12, 'mês', 'meses'), '12 meses')
 assert.equal(plural(0, 'dia', 'dias'), '0 dias')
 
 console.log('format ok')
+
+// Quantidade se digita como se fala: "50" são 50 sacos, não 0,50 (rodada 1, A3).
+assert.equal(lerQtd(''), 0)
+assert.equal(lerQtd('50'), 50)
+assert.equal(lerQtd('50,00'), 50)
+assert.equal(lerQtd('8,5'), 8.5)
+assert.equal(lerQtd('1.234,5'), 1234.5)
+assert.equal(lerQtd('1.300,00'), 1300) // o que o campo mostra volta igual ao focar
+assert.equal(lerQtd('1234.56'), 1234.56) // ponto decimal de quem vem do teclado americano
+assert.equal(lerQtd('1.234'), 1234) // ponto com 3 casas é milhar no pt-BR
+assert.equal(lerQtd('1.5'), 1.5)
+assert.equal(lerQtd('1.234.567'), 1234567)
+assert.equal(lerQtd('R$ 1 234,56'), 1234.56)
+assert.equal(lerQtd('0,333'), 0.33) // 2 casas, como o campo mostra
+assert.equal(lerQtd('abc'), 0)
