@@ -98,6 +98,8 @@ export default function MovimentacaoPanel({
     setLinhas([{ ...linhaVazia }])
     setMostrarItens(false)
     setSeed((s) => s + 1)
+    // A observação do pagamento é DA nota ("cheque 4412"): herdada, ia parar na seguinte.
+    setPagoObs('')
     // Fornecedor, serviço, vencimento e o check Pago NÃO limpam: numa rajada de notas, costumam
     // ser os mesmos da anterior, e é justamente o que ninguém quer redigitar.
   }
