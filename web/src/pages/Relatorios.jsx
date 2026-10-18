@@ -455,7 +455,7 @@ function FolhaExtrato({ dados, totais }) {
           <h2 className="text-[20px] leading-tight font-bold text-titulo">Extrato da fase</h2>
           <p className="text-[13px] text-[#555]">{[obra.nome, obra.cliente].filter(Boolean).join(' · ')}</p>
         </div>
-        <p className="text-right text-[11px] text-[#777]">Emitido em<br /><b className="text-[13px] text-[#333]">{formatData(hoje())}</b></p>
+        <p className="text-right text-[11px] text-[#777]">Emitido em{' '}<br /><b className="text-[13px] text-[#333]">{formatData(hoje())}</b></p>
       </header>
 
       <section className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5">

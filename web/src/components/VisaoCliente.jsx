@@ -69,7 +69,7 @@ export default function VisaoCliente({ obraId, situacao }) {
               {[obra.cliente, obra.cidade, situacao].filter(Boolean).join(' · ')}
             </p>
           </div>
-          <p className="text-right text-[11px] text-[#777]">Posição em<br /><b className="text-[13px] text-[#333]">{formatData(hoje())}</b></p>
+          <p className="text-right text-[11px] text-[#777]">Posição em{' '}<br /><b className="text-[13px] text-[#333]">{formatData(hoje())}</b></p>
         </header>
 
         {/* Números grandes e poucos. */}
