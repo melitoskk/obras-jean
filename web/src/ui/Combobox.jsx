@@ -67,8 +67,12 @@ export default function Combobox({
     else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)) }
     else if (e.key === 'Enter') { e.preventDefault(); choose(rows[hi]) }
     // Esc com a lista aberta fecha SÓ a lista: o preventDefault avisa o Registro em volta,
-    // que senão fechava o modal inteiro e levava o lançamento digitado junto.
-    else if (e.key === 'Escape') { if (open) e.preventDefault(); setOpen(false); e.currentTarget.blur() }
+    // que senão fechava o modal inteiro e levava o lançamento digitado junto. O foco e o
+    // texto ficam (rodada 2, A8): sair do campo trocava o digitado pela seleção, vazia.
+    // Com a lista já fechada, o Esc sai do campo e segue pro modal.
+    else if (e.key === 'Escape') {
+      if (open) { e.preventDefault(); setOpen(false) } else e.currentTarget.blur()
+    }
     else if (e.key === 'Tab' && open) { choose(rows[hi]) } // sem preventDefault: o Tab segue
   }
 
