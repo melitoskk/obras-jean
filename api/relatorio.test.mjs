@@ -143,6 +143,10 @@ assert.deepEqual(ex.lancamentos.map((l) => [l.data, l.tipo, l.valor, l.saldo]), 
 // Histórico: serviço → fornecedor (o único das linhas) → itens; empreita leva o do cabeçalho.
 assert.match(ex.lancamentos[1].historico, new RegExp(`${estaca.nome} · Loja · Cimento`))
 assert.match(ex.lancamentos[2].historico, /José/)
+// Código e nome do serviço são os da ESTIMATIVA da obra, como no Fluxo (rodada 2, A19):
+// a estimativa numera os serviços que escolheu, o catálogo numera todos.
+db.prepare('UPDATE servico SET codigo = 7 WHERE orcamento_id = ? AND catalogo_id = ?').run(orc, estaca.id)
+assert.match(extratoFase(obra, fund).lancamentos[1].historico, new RegExp(`^${catFund.codigo}\\.7 ${estaca.nome} · `))
 assert.equal(ex.lancamentos[3].historico, 'Aporte do cliente')
 // Sem fase: só obra e fases, pro combo. Fase de outra obra não vaza.
 assert.deepEqual(extratoFase(obra).lancamentos, [])

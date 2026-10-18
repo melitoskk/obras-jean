@@ -211,12 +211,18 @@ export function extratoFase(obraId, faseId = null) {
   `).all(fase.id)
   // O histórico da saída se monta como no extrato do Fluxo: serviço → quem cobrou →
   // o que veio → o que a pessoa escreveu. Fornecedor é o do cabeçalho ou, sem ele, o
-  // das linhas quando é um só.
+  // das linhas quando é um só. O serviço sai numerado como na estimativa viva, igual ao
+  // Fluxo (rodada 2, A19); o catálogo só cobre o que saiu da estimativa depois.
   const saidas = db.prepare(`
-    SELECT 'saida' AS tipo, s.id, s.numero, s.data, s.criado_em, s.descricao, s.valor,
-      s.vencimento, s.pago_em, sc.codigo AS servico_codigo, sc.nome AS servico, fo.nome AS fornecedor
+    SELECT 'saida' AS tipo, s.id, s.numero, s.data, s.criado_em, s.descricao, s.valor, s.vencimento, s.pago_em,
+      COALESCE(sv.codigo, sc.codigo) AS servico_codigo, COALESCE(sv.nome, sc.nome) AS servico, fo.nome AS fornecedor
     FROM saida s
     LEFT JOIN servico_catalogo sc ON sc.id = s.servico_catalogo_id
+    -- Subconsulta, não JOIN: a estimativa pode ter o serviço duas vezes (opções) e a
+    -- nota não pode sair duplicada. O primeiro, como o Fluxo faz.
+    LEFT JOIN servico sv ON sv.id = (
+      SELECT x.id FROM servico x JOIN orcamento o ON o.id = x.orcamento_id AND o.ativo = 1
+      WHERE x.fase_id = s.fase_id AND x.catalogo_id = s.servico_catalogo_id ORDER BY x.codigo, x.id LIMIT 1)
     LEFT JOIN fornecedor fo ON fo.id = s.fornecedor_id
     WHERE s.fase_id = ?
   `).all(fase.id)
