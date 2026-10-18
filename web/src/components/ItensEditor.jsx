@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import Combobox from '../ui/Combobox'
 import Botao, { Link } from '../ui/Botao'
@@ -22,6 +22,26 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
   // Sem isso o preço base envelhece calado e a sugestão passa a mentir toda vez.
   const [perguntando, setPerguntando] = useState(null)
   const jaPerguntado = useRef(new Set()) // "quem já respondeu não é perguntado de novo"
+
+  // Saiu do valor CLICANDO em outra coisa ("Adicionar linha", "Pago"): o blur vem no
+  // mousedown, a pergunta abria por cima e o clique terminava nela e se perdia (rodada 3,
+  // A3). Com o botão apertado, a pergunta espera o clique acabar; pelo Tab, abre na hora.
+  const apertado = useRef(false)
+  useEffect(() => {
+    const desce = () => { apertado.current = true }
+    const sobe = () => { apertado.current = false }
+    document.addEventListener('pointerdown', desce, true)
+    document.addEventListener('pointerup', sobe, true)
+    return () => {
+      document.removeEventListener('pointerdown', desce, true)
+      document.removeEventListener('pointerup', sobe, true)
+    }
+  }, [])
+  const depoisDoClique = (fn) => {
+    if (!apertado.current) return fn()
+    // O click sai logo depois do pointerup, na mesma volta; o setTimeout passa dele.
+    document.addEventListener('pointerup', () => setTimeout(fn, 0), { once: true })
+  }
 
   const set = (i, patch) => onChange(linhas.map((l, idx) => (idx === i ? { ...l, ...patch } : l)))
   const add = () => onChange([...linhas, { ...linhaVazia }])
@@ -120,7 +140,7 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
                 <MoneyInput
                   value={l.valorUnit}
                   onChange={(v) => set(i, { valorUnit: v })}
-                  onBlur={() => conferirPreco(l)}
+                  onBlur={() => depoisDoClique(() => conferirPreco(l))}
                   className={acima ? 'text-laranja' : ''}
                   title={acima ? `Acima do preço base (${formatMoeda(base)})` : undefined}
                 />
