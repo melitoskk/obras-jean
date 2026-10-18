@@ -35,7 +35,9 @@ export default function MovimentacaoPanel({
   const [servicoId, setServicoId] = useState(mov?.servico_catalogo_id ?? null)
   const [descricao, setDescricao] = useState(mov?.descricao ?? '')
   const [anexo, setAnexo] = useState(mov?.anexo ?? null)
-  const [anexoNome, setAnexoNome] = useState(mov?.anexo ? 'anexo' : null)
+  // O ref carrega o nome original depois de "__" (server.js, /api/anexos): na edição o
+  // anexo aparece pelo nome do arquivo, não como "anexo" (rodada 2, A12).
+  const [anexoNome, setAnexoNome] = useState(mov?.anexo ? mov.anexo.split('__').slice(1).join('__') || 'anexo' : null)
   const [enviando, setEnviando] = useState(false)
   // Pagar é um check aqui dentro - não existe módulo de contas a pagar. Lançamento
   // novo nasce pago (a rajada normal é nota já paga); desmarcar deixa em aberto.
