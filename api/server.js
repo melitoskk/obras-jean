@@ -161,7 +161,10 @@ const CAMPOS_CLIENTE = ['nome', 'tipo', 'cpf_cnpj', 'rg', 'dt_nasc', 'categoria'
 app.patch('/api/clientes/:id', (req, res) => {
   const campos = CAMPOS_CLIENTE.filter((k) => k in req.body)
   // Completar qualquer campo tira o cliente da fila de pendências.
-  db.prepare(`UPDATE cliente SET ${[...campos.map((k) => `${k}=?`), 'incompleto=0'].join(',')} WHERE id=?`)
+  // Inativar/ativar manda só `ativo` e não completa nada (rodada 3, A2).
+  const completa = campos.some((k) => k !== 'ativo')
+  if (!campos.length) return res.json({ ok: true })
+  db.prepare(`UPDATE cliente SET ${[...campos.map((k) => `${k}=?`), ...(completa ? ['incompleto=0'] : [])].join(',')} WHERE id=?`)
     .run(...campos.map((k) => req.body[k]), Number(req.params.id))
   res.json({ ok: true })
 })
@@ -501,7 +504,10 @@ const CAMPOS_FORNECEDOR = ['nome', 'cnpj', 'ie', 'contato', 'telefone', 'celular
 app.patch('/api/fornecedores/:id', (req, res) => {
   const campos = CAMPOS_FORNECEDOR.filter((k) => k in req.body)
   // Completar qualquer campo tira o fornecedor da fila de pendências.
-  db.prepare(`UPDATE fornecedor SET ${[...campos.map((k) => `${k}=?`), 'incompleto=0'].join(',')} WHERE id=?`)
+  // Inativar/ativar manda só `ativo` e não completa nada (rodada 3, A2).
+  const completa = campos.some((k) => k !== 'ativo')
+  if (!campos.length) return res.json({ ok: true })
+  db.prepare(`UPDATE fornecedor SET ${[...campos.map((k) => `${k}=?`), ...(completa ? ['incompleto=0'] : [])].join(',')} WHERE id=?`)
     .run(...campos.map((k) => req.body[k]), Number(req.params.id))
   res.json({ ok: true })
 })
