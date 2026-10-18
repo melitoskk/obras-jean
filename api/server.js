@@ -6,7 +6,7 @@ import { login, logout, quemSou, exigirLogin, exigirPapel, obrasVisiveis, podeOb
 import rotasOrcamento, { CUSTO } from './rotas/orcamento.js'
 import rotasFornecedor from './rotas/fornecedor.js'
 import rotasUsuario from './rotas/usuario.js'
-import rotasRelatorio, { aReceberPrevisto, taxaDevida } from './rotas/relatorio.js'
+import rotasRelatorio, { aReceberPrevisto, taxaDevida, pendenteParaConcluir } from './rotas/relatorio.js'
 import rotasVisao from './rotas/visao.js'
 import { enviarCsv, reais, numeroLancamento } from './csv.js'
 
@@ -128,6 +128,19 @@ app.post('/api/obras', (req, res) => {
 // foto sem precisar reenviar nome, cliente e status junto.
 app.patch('/api/obras/:id', (req, res) => {
   const campos = CAMPOS_OBRA.filter((k) => k in req.body)
+  // Concluída só com tudo fechado (Jean, 18/10/2026): toda fase concluída, com a taxa
+  // escolhida, e nenhuma conta a pagar. Obra que já estava concluída não é barrada.
+  if (req.body.status === 'concluida') {
+    const atual = db.prepare('SELECT status FROM obra WHERE id = ?').get(Number(req.params.id))?.status
+    const p = atual !== 'concluida' && pendenteParaConcluir(Number(req.params.id))
+    if (p) {
+      const falta = [
+        p.fasesAbertas.length && `concluir ${p.fasesAbertas.length === 1 ? 'a fase' : `${p.fasesAbertas.length} fases:`} ${p.fasesAbertas.join(', ')}`,
+        p.aPagar && `pagar R$ ${(p.aPagar / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em aberto`,
+      ].filter(Boolean).join(' e ')
+      return res.status(409).json({ erro: `Para concluir a obra, falta ${falta}.` })
+    }
+  }
   if (campos.length) {
     db.prepare(`UPDATE obra SET ${campos.map((k) => `${k}=?`).join(',')} WHERE id=?`)
       .run(...campos.map((k) => req.body[k]), Number(req.params.id))

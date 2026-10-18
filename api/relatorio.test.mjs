@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 const dir = mkdtempSync(join(tmpdir(), 'obras-'))
 process.env.OBRAS_DB = join(dir, 'teste.db')
 const { default: db, novoOrcamento } = await import('./db.js')
-const { pagamentos, estimadoRealizado, extratoFase, DIMENSOES, aReceberPrevisto } = await import('./rotas/relatorio.js')
+const { pagamentos, estimadoRealizado, extratoFase, DIMENSOES, aReceberPrevisto, pendenteParaConcluir } = await import('./rotas/relatorio.js')
 
 const ins = (sql, ...v) => Number(db.prepare(sql).run(...v).lastInsertRowid)
 const obra = ins("INSERT INTO obra (nome, criada_em) VALUES ('Casa', '2026-10-01')")
@@ -159,6 +159,16 @@ db.prepare("UPDATE fase SET concluida_em = '2026-10-05', taxa_tipo = 'pct', taxa
 assert.deepEqual((({ taxa_tipo, taxa_valor, taxa_devida }) => ({ taxa_tipo, taxa_valor, taxa_devida }))(extratoFase(obra, fund).fase),
   { taxa_tipo: 'pct', taxa_valor: 1000, taxa_devida: 200_00 })
 db.prepare('UPDATE fase SET concluida_em = NULL, taxa_tipo = NULL, taxa_valor = NULL WHERE id = ?').run(fund)
+
+// ── Concluir a obra (Jean, 18/10/2026: impedir até tudo estar fechado) ──
+// A fundação está aberta e tem a empreita de 5.000 em aberto: duas pendências.
+assert.deepEqual(pendenteParaConcluir(obra), { fasesAbertas: ['FUNDAÇÕES'], aPagar: 5_000_00 })
+db.prepare("UPDATE saida SET pago_em = '2026-10-06' WHERE fase_id = ? AND pago_em IS NULL").run(fund)
+db.prepare("UPDATE fase SET concluida_em = '2026-10-06' WHERE id = ?").run(fund)
+assert.equal(pendenteParaConcluir(obra), null, 'tudo fechado: pode concluir')
+// Fase inativa sem lançamento não segura a obra.
+ins("INSERT INTO fase (obra_id, catalogo_id, codigo, nome, ordem, inativa) VALUES (?,?,?,'TIRADA',9,1)", obra, catFund.id, 9)
+assert.equal(pendenteParaConcluir(obra), null)
 
 rmSync(dir, { recursive: true, force: true })
 console.log('relatorio.test: ok')

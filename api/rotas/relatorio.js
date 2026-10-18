@@ -105,6 +105,19 @@ export function aReceberPrevisto(fases, taxaAdm, recebido, obraConcluida = false
   return previsto - recebido
 }
 
+// O que impede a obra de ser concluída (Jean, 18/10/2026: impedir até tudo estar
+// fechado): fase ativa sem concluir e conta lançada sem pagar. null = pode concluir.
+// Fase inativa não conta: saiu da obra. A conta em aberto conta em qualquer fase.
+export function pendenteParaConcluir(obraId) {
+  const fasesAbertas = db.prepare(
+    'SELECT nome FROM fase WHERE obra_id = ? AND inativa = 0 AND concluida_em IS NULL ORDER BY codigo, ordem, id',
+  ).all(obraId).map((f) => f.nome)
+  const aPagar = db.prepare(
+    'SELECT IFNULL(SUM(s.valor), 0) v FROM saida s JOIN fase f ON f.id = s.fase_id WHERE f.obra_id = ? AND s.pago_em IS NULL',
+  ).get(obraId).v
+  return fasesAbertas.length || aPagar ? { fasesAbertas, aPagar } : null
+}
+
 // ── 2 e 5. Estimado × realizado, e a taxa de administração ──────────────────────────
 // Uma obra por vez: o estimado é de UMA estimativa (a viva), e somar fases de obras
 // diferentes não responde pergunta nenhuma. O relatório 5 é este mesmo payload com a

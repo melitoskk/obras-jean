@@ -151,8 +151,9 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
       else await criarObra(campos)
       setFaixa({ tipo: 'sucesso', texto: 'Operação executada com sucesso.' })
       onSalvo?.()
-    } catch {
-      setFaixa({ tipo: 'erro', texto: 'Não foi possível salvar.' })
+    } catch (e) {
+      // `e.erro` é a frase do servidor: "Para concluir a obra, falta…".
+      setFaixa({ tipo: 'erro', texto: e.erro ?? 'Não foi possível salvar.' })
     } finally {
       setSalvando(false)
     }
