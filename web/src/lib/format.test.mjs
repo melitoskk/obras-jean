@@ -3,7 +3,7 @@
 // O resto é Intl e não vale teste.
 import assert from 'node:assert/strict'
 import {
-  mult, formatQtd, formatMoeda, lerQtd,
+  mult, formatQtd, formatMoeda, lerQtd, lerColado, teclaCorrida,
   mascaraDoc, mascaraCep, mascaraTel, duracaoEntre, linkWhats, plural,
 } from './format.js'
 
@@ -76,3 +76,36 @@ assert.equal(lerQtd('1.234.567'), 1234567)
 assert.equal(lerQtd('R$ 1 234,56'), 1234.56)
 assert.equal(lerQtd('0,333'), 0.33) // 2 casas, como o campo mostra
 assert.equal(lerQtd('abc'), 0)
+
+// Dinheiro e % colados (rodada 2, A16): o texto colado é um número escrito, não uma
+// sequência de teclas de caixa eletrônico. Centésimos inteiros (centavo ou ponto-base).
+assert.equal(lerColado('1.234,5'), 123450)
+assert.equal(lerColado('1234.56'), 123456)
+assert.equal(lerColado('R$ 1 234,56'), 123456)
+assert.equal(lerColado('1234'), 123400) // da planilha: R$ 1.234,00, não 12,34
+assert.equal(lerColado('abc'), 0)
+
+// Digitação corrida pela tecla. Sem vírgula, caixa eletrônico (Jean, 17/10/2026):
+// 450 = 4,50. Com vírgula, o que veio antes são reais e o que vem depois, centavos:
+// "1.234,5" digitado dá 1.234,50 (rodada 2, A16), não 123,45. O ponto é de milhar.
+const digita = (teclas, ini = { valor: 0, casas: null }) =>
+  [...teclas].reduce((e, t) => teclaCorrida(e, t === '<' ? 'Backspace' : t, false), ini)
+assert.equal(digita('450').valor, 450)
+assert.equal(digita('45000').valor, 45000)
+assert.equal(digita('1.234,5').valor, 123450)
+assert.equal(digita('1.234,56').valor, 123456)
+assert.equal(digita('1.234,567').valor, 123456) // terceira casa não entra
+assert.equal(digita('10,').valor, 1000) // 10,00 (% ou R$)
+assert.equal(digita(',5').valor, 50)
+assert.equal(digita('12,3,4').valor, 1234) // segunda vírgula não faz nada
+assert.equal(digita('12,34<').valor, 1230)
+assert.equal(digita('12,34<<').valor, 1200)
+assert.equal(digita('12,34<<<').valor, 12) // apagou a vírgula: volta a ser 0,12
+assert.equal(digita('12,34<<<5').valor, 125)
+assert.equal(digita('123<').valor, 12)
+// Tudo selecionado: a primeira tecla recomeça do zero.
+assert.equal(teclaCorrida({ valor: 99900, casas: null }, '7', true).valor, 7)
+assert.equal(teclaCorrida({ valor: 99900, casas: 2 }, ',', true).casas, 0)
+assert.equal(teclaCorrida({ valor: 99900, casas: null }, 'Backspace', true).valor, 0)
+// Tecla que não é da corrida devolve null: o campo deixa passar (Tab, setas).
+assert.equal(teclaCorrida({ valor: 1, casas: null }, 'Tab', false), null)

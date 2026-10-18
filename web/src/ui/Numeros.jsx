@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { formatMoeda, formatPct, formatQtd, lerQtd } from '../lib/format'
+import { useRef, useState } from 'react'
+import { formatMoeda, formatPct, formatQtd, lerQtd, lerColado, teclaCorrida } from '../lib/format'
 
 // Digitação corrida: os dígitos escorrem da direita pra esquerda até as casas decimais.
 // 12345 -> 123,45. Entrega sempre o INTEIRO de dígitos; quem chama decide o que ele
-// significa (centavos ou ponto-base). É o fallback de colar e de teclado sem tecla.
+// significa (centavos ou ponto-base). É o fallback do teclado que não manda a tecla.
 function corrida(texto, onChange) {
   const digitos = texto.replace(/\D/g, '').slice(0, 15)
   onChange(digitos ? parseInt(digitos, 10) : 0)
@@ -12,21 +12,14 @@ function corrida(texto, onChange) {
 // A corrida pela TECLA, não pelo texto: o dígito entra sempre no fim, esteja o cursor
 // onde estiver. Pelo texto, clicar no meio de "0,00" e digitar 450 dava 4.500,00, e
 // corrigir "0,50" digitando 50,00 dava 50.050,00 (rodada 1, A3). Com tudo selecionado,
-// o dígito recomeça do zero, como numa planilha.
-function teclaCorrida(e, atual, onChange) {
-  if (e.ctrlKey || e.metaKey || e.altKey || e.currentTarget.readOnly) return
-  const el = e.currentTarget
-  const tudo = el.selectionStart === 0 && el.selectionEnd === el.value.length
-  if (/^\d$/.test(e.key)) {
-    e.preventDefault()
-    const novo = (tudo ? 0 : atual) * 10 + Number(e.key)
-    if (String(novo).length <= 15) onChange(novo)
-  } else if (e.key === 'Backspace' || e.key === 'Delete') {
-    e.preventDefault()
-    onChange(tudo ? 0 : Math.floor(atual / 10))
-  }
-}
-
+// o dígito recomeça do zero, como numa planilha. A conta é `teclaCorrida` (format.js,
+// testada); aqui só o que é do campo: a seleção e as casas depois da vírgula.
+//
+// Focar seleciona tudo, mas a seleção só chega no quadro seguinte (o rAF passa do
+// mouseup, que senão a desfaz). Quem digita rápido manda o primeiro dígito antes dela, e
+// o segundo achava tudo selecionado e recomeçava: 3500000 virava 5.000,00 (rodada 2, A6).
+// Por isso a primeira tecla depois do foco conta como "tudo selecionado", e a seleção
+// atrasada não acontece mais se alguém já digitou.
 // Focar seleciona tudo: o próximo dígito substitui o valor em vez de somar a ele.
 // O rAF passa do mouseup, que senão desfaz a seleção do clique.
 const selecionar = (e) => {
@@ -37,13 +30,34 @@ const selecionar = (e) => {
 const base = 'op-input text-right tabular-nums'
 
 function Corrida({ value, onChange, formatar, cel, className, ...props }) {
+  const sessao = useRef({ casas: null, recemFocado: false })
+  function tecla(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.currentTarget.readOnly) return
+    const el = e.currentTarget
+    const tudo = sessao.current.recemFocado || (el.selectionStart === 0 && el.selectionEnd === el.value.length)
+    const novo = teclaCorrida({ valor: value, casas: sessao.current.casas }, e.key, tudo)
+    if (!novo) return
+    e.preventDefault()
+    sessao.current = { casas: novo.casas, recemFocado: false }
+    if (novo.valor !== value) onChange(novo.valor)
+  }
+  function focar(e) {
+    const el = e.currentTarget
+    sessao.current = { casas: null, recemFocado: true }
+    requestAnimationFrame(() => {
+      if (sessao.current.recemFocado && document.activeElement === el) el.select()
+    })
+  }
   return (
     <input
-      inputMode="numeric"
+      inputMode="decimal"
       value={formatar(value)}
-      onKeyDown={(e) => teclaCorrida(e, value, onChange)}
+      onKeyDown={tecla}
       onChange={(e) => corrida(e.target.value, onChange)}
-      onFocus={selecionar}
+      // Colado é número escrito (rodada 2, A16): "1.234,5" é 1.234,50, não 123,45.
+      onPaste={(e) => { e.preventDefault(); sessao.current = { casas: null, recemFocado: false }; onChange(lerColado(e.clipboardData.getData('text'))) }}
+      onFocus={focar}
+      onBlur={() => { sessao.current = { casas: null, recemFocado: false } }}
       className={`${base} ${cel ? 'op-cel' : ''} ${className}`}
       {...props}
     />
