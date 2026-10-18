@@ -197,6 +197,7 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
       <Confirm
         open={!!perguntando}
         danger={false}
+        focoNoCancelar
         title={`${perguntando?.nome} saiu por ${formatBRL(perguntando?.valor ?? 0)}`}
         message={
           perguntando?.combinado
