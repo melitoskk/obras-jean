@@ -12,7 +12,11 @@ export const reais = (centavos) => ((centavos ?? 0) / 100).toFixed(2).replace('.
 export function enviarCsv(res, nome, cabecalho, linhas) {
   const csv = [cabecalho.join(';'), ...linhas.map((l) => l.map(csvCampo).join(';'))].join('\r\n')
   res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-  res.setHeader('Content-Disposition', `attachment; filename="${nome.replace(/[^\w-]+/g, '_')}.csv"`)
+  // `filename*` leva o nome com acento (rodada 3, A16); `filename` é o reserva ASCII de
+  // navegador antigo, sem acento em vez de com "_" no lugar da letra.
+  const ascii = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '_')
+  res.setHeader('Content-Disposition',
+    `attachment; filename="${ascii}.csv"; filename*=UTF-8''${encodeURIComponent(`${nome}.csv`)}`)
   res.send('﻿' + csv) // BOM explícito: sem ele o Excel-BR come os acentos
 }
 
