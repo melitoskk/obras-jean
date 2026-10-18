@@ -165,7 +165,8 @@ function Pagamentos({ filtro, setFiltro, opcoesObra }) {
           },
           ...(analitico ? [
             { chave: 'obra', titulo: 'Obra', largura: 140, nowrap: false, render: (l) => l.lanc?.obra },
-            { chave: 'fase', titulo: 'Fase', largura: 170, nowrap: false, render: (l) => l.lanc?.fase },
+            // Agrupado por fase, a fase já é a primeira coluna (rodada 2, A15).
+            ...(por === 'fase' ? [] : [{ chave: 'fase', titulo: 'Fase', largura: 170, nowrap: false, render: (l) => l.lanc?.fase }]),
             { chave: 'data', titulo: 'Data', largura: 80, render: (l) => l.lanc && formatData(l.lanc.data) },
           ] : []),
           { chave: 'lancado', titulo: 'Lançado (R$)', largura: 110, align: 'right', render: (l) => <Rs v={l.lancado} /> },
