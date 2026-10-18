@@ -71,16 +71,16 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
   const conferirPreco = (l) => {
     const it = insumos.find((x) => x.id === l.itemId)
     const forn = fornDa(l)
-    if (!onPrecoNovo || !it || !l.valorUnit) return
+    if (!onPrecoNovo || !it || !l?.valorUnit) return false
     // Valor que veio do prefill não foi digitado por ninguém: perguntar sobre ele
     // seria interromper quem só passou pelo campo.
-    if (l.valorUnit === sugerir(it.id, forn)) return
+    if (l.valorUnit === sugerir(it.id, forn)) return false
     const combinado = forn
       ? (vinculos.find((v) => v.itemId === it.id && v.fornecedorId === forn)?.preco ?? 0)
       : (it.preco_base ?? 0)
-    if (l.valorUnit === combinado) return
+    if (l.valorUnit === combinado) return false
     const chave = `${it.id}:${forn}:${l.valorUnit}`
-    if (jaPerguntado.current.has(chave)) return
+    if (jaPerguntado.current.has(chave)) return false
     jaPerguntado.current.add(chave)
     setPerguntando({
       itemId: it.id,
@@ -90,7 +90,32 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
       combinado,
       valor: l.valorUnit,
     })
+    return true
   }
+
+  // A pergunta espera o foco sair pra algo que não é campo de digitação (botão, Pago,
+  // fora da nota). Saindo do valor direto pra quantidade, ela abria por cima e comia o
+  // dígito, no celular sobretudo (rodada 3, A12). A fila guarda o índice da linha e lê
+  // a linha de agora: o valor pode ter mudado de novo antes de perguntar.
+  const fila = useRef([])
+  const linhasAgora = useRef(linhas)
+  linhasAgora.current = linhas
+  const conferirAgora = useRef(conferirPreco)
+  conferirAgora.current = conferirPreco
+  useEffect(() => {
+    const digitando = (el) => el?.tagName === 'TEXTAREA' ||
+      (el?.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'submit', 'file'].includes(el.type))
+    const saiu = (e) => {
+      if (!fila.current.length || digitando(e.relatedTarget)) return
+      depoisDoClique(() => {
+        while (fila.current.length) {
+          if (conferirAgora.current(linhasAgora.current[fila.current.shift()])) break
+        }
+      })
+    }
+    document.addEventListener('focusout', saiu)
+    return () => document.removeEventListener('focusout', saiu)
+  }, [])
 
   return (
     <div>
@@ -140,7 +165,7 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
                 <MoneyInput
                   value={l.valorUnit}
                   onChange={(v) => set(i, { valorUnit: v })}
-                  onBlur={() => depoisDoClique(() => conferirPreco(l))}
+                  onBlur={() => { if (!fila.current.includes(i)) fila.current.push(i) }}
                   className={acima ? 'text-laranja' : ''}
                   title={acima ? `Acima do preço base (${formatMoeda(base)})` : undefined}
                 />

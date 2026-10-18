@@ -9,13 +9,6 @@ function corrida(texto, onChange) {
   onChange(digitos ? parseInt(digitos, 10) : 0)
 }
 
-// Focar seleciona tudo: o próximo dígito substitui o valor em vez de somar a ele.
-// O rAF passa do mouseup, que senão desfaz a seleção do clique.
-const selecionar = (e) => {
-  const el = e.currentTarget
-  requestAnimationFrame(() => document.activeElement === el && el.select())
-}
-
 const base = 'op-input text-right tabular-nums'
 
 // A corrida pela TECLA, não pelo texto: o dígito entra sempre no fim, esteja o cursor
@@ -24,8 +17,8 @@ const base = 'op-input text-right tabular-nums'
 // o dígito recomeça do zero, como numa planilha. A conta é `teclaCorrida` (format.js,
 // testada); aqui só o que é do campo: a seleção e as casas depois da vírgula.
 //
-// Focar seleciona tudo, mas a seleção só chega no quadro seguinte (o rAF passa do
-// mouseup, que senão a desfaz). Quem digita rápido manda o primeiro dígito antes dela, e
+// Focar seleciona tudo, pro próximo dígito substituir o valor em vez de somar a ele. Mas
+// a seleção só chega no quadro seguinte (o rAF passa do mouseup, que senão a desfaz). Quem digita rápido manda o primeiro dígito antes dela, e
 // o segundo achava tudo selecionado e recomeçava: 3500000 virava 5.000,00 (rodada 2, A6).
 // Por isso a primeira tecla depois do foco conta como "tudo selecionado", e a seleção
 // atrasada não acontece mais se alguém já digitou.
@@ -105,13 +98,30 @@ export function MoneyInput({ value = 0, className = '', ...props }) {
 // Quantidade em 2 casas, guardada como REAL - não é dinheiro. NÃO é corrida: "50" são
 // 50 sacos, não 0,50. Enquanto o campo está focado vale o texto digitado; ao sair,
 // volta formatado.
+//
+// A mesma corrida do foco do dinheiro (rodada 2, A6): a seleção chega um quadro depois, e
+// "10" digitado logo ao tocar virava "0" - o 1 entrava, a seleção atrasada pegava ele e o
+// 0 substituía (rodada 3, A12). O primeiro caractere depois do foco seleciona antes de entrar.
 export function QtdInput({ value = 0, onChange, cel, className = '', ...props }) {
   const [texto, setTexto] = useState(null) // null = fora de edição, mostra formatado
+  const recemFocado = useRef(false)
+  const primeiro = (e) => {
+    if (!recemFocado.current) return
+    recemFocado.current = false
+    e.currentTarget.select()
+  }
   return (
     <input
       inputMode="decimal"
       value={texto ?? formatQtd(value)}
-      onFocus={(e) => { setTexto(value ? formatQtd(value) : ''); selecionar(e) }}
+      onFocus={(e) => {
+        setTexto(value ? formatQtd(value) : '')
+        recemFocado.current = true
+        const el = e.currentTarget
+        requestAnimationFrame(() => { if (recemFocado.current && document.activeElement === el) el.select() })
+      }}
+      onKeyDown={(e) => { if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) primeiro(e) }}
+      onBeforeInput={primeiro}
       onChange={(e) => { setTexto(e.target.value); onChange(lerQtd(e.target.value)) }}
       onBlur={() => setTexto(null)}
       className={`${base} ${cel ? 'op-cel' : ''} ${className}`}
