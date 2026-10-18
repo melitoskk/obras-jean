@@ -4,12 +4,12 @@
 | Origem | O que seria | Tamanho |
 |---|---|---|
 | R1-A5 | Escolher o tipo (material / mão de obra / equipamento) ao criar o item no lançamento; relatório e filtro "Por tipo" com fase | médio |
-| R1-A9 | Relatório de pagamentos com filtros combinados (fase + insumo + fornecedor) e colunas Qtd/Unid | médio |
+| R1-A9 | Relatório de pagamentos com filtros combinados (fase + insumo + fornecedor) e colunas Qtd/Unid/Fornecedor (R3-A5) | médio |
 | R1-A10 | Avanço físico por fase e projeção "vai fechar em R$ X" (depende da Dúvida 21 do UPDATE.md) | grande |
 | R1-A11 | Pendências: status aberta/feita, fase, responsável | médio |
 | R1-A12 | Celular: botão fixo "+ Lançar"; itens da nota em lista vertical | médio |
 | R1-A14 | Ao salvar obra nova, abrir direto na aba Fases | pequeno |
-| R1-A15 | Preço combinado: padrão "só nesta nota" sem popup; "Criar" com um clique | pequeno |
+| R1-A15 | Preço combinado: padrão "só nesta nota" sem popup; "Criar" com um clique, sem o campo em branco durante a pergunta (R3-A9) | pequeno |
 | R1-A16 | Busca do catálogo por palavras soltas; aviso "parecido com..." antes de criar | pequeno |
 | R1-A17 | Miniatura da foto no diário e foto do diário contando na Galeria | pequeno |
 | R1-A18 | Validar faixa de ano nas datas (ex.: 2000-2100) | pequeno |
@@ -19,18 +19,21 @@
 | R2-A9 | Campo "boleto / linha digitável" para conta a vencer | pequeno |
 | R2-A13 | "Descartar alterações?" ao fechar formulário alterado | pequeno/médio |
 | R2-A15 | Fases com número no Diário; um nome só para a estimativa ("000001" × "viva") | pequeno |
-| R2-A21 | Dossiê da obra em PDF; Exportar CSV nos relatórios; orçado e diferença no extrato da fase; Visão do cliente durante a obra (propostas no relatório) | grande |
+| R2-A21 | Dossiê da obra em PDF; Exportar CSV nos relatórios; orçado, diferença e taxa (R3-A15) no extrato da fase; Visão do cliente durante a obra (propostas no relatório) | grande |
 | R2-A22 | Aviso "alguém alterou esta obra" (versão do registro) quando duas abas mudam o mesmo campo | médio |
 | R2-A24 | Data no Diário de obra (padrão hoje) | pequeno |
 | R2-A26 | Aviso de data no futuro e de pagamento antes da nota | pequeno |
 | R2-A27 | Tirar fase com gasto: dizer o motivo e oferecer mover os lançamentos | pequeno/médio |
 | R2-A29 | Celular: alvos de 40 px, menu "Mais" na barra (junto com R1-A12) | médio |
 | R2-A30 | Lista da fase ordenada por data, com opção de inverter | pequeno |
+| R3-A8 | Etiqueta "Inativo" no cadastro de cliente/fornecedor inativo | pequeno |
+| R3-A18 | Unidade junto dos preços na nota ("R$ 0,78/kg") | pequeno |
 
 ## Perguntas ao Jean
 1. **R2-A3 Taxa para o cliente.** Hoje a taxa devida só aparece no relatório de taxa. Você quer que ela apareça (a) no topo da obra, (b) na Visão do cliente e no extrato da fase? E quando o cliente paga a taxa, como você registra: como uma entrada comum, ou como um recebimento separado, que não vai para o caixa da obra?
 2. **R2-A20 Percentual.** O dinheiro continua como caixa eletrônico (450 = R$ 4,50). E o percentual: quando você digita "10" na taxa, deve dar 10% (como se fala) ou 0,10% (como o dinheiro)? Hoje dá 0,10%. Digitar "10," já dá 10%.
 3. **R2-A25 Concluir a obra.** Hoje dá para marcar a obra como Concluída com fases abertas e contas a pagar. Ao concluir a obra, o sistema deve (a) só avisar o que está aberto, (b) pedir para concluir cada fase com a taxa, ou (c) impedir até tudo estar fechado?
+4. **R3-A13/A19 O que o mestre e o escritório podem.** O mestre (campo) hoje vê todas as pastas da Galeria, inclusive Contrato e Cronograma físico-financeiro, que têm valores. Quais pastas ele deve ver: só Fotos, Projetos e Diário? Ele também pode excluir arquivo e foto que outra pessoa lançou. Deve excluir só o que ele mesmo lançou, como no diário? E o escritório, que hoje pode concluir e reabrir fase e escolher a taxa: fica assim, ou isso é só seu?
 
 ### Respostas do Jean (17/10/2026)
 - **R1-A2 Taxa:** cada fase escolhe valor fixo OU percentual. A taxa é devida ao **fechar a fase**. O percentual incide **só sobre o que foi pago**.
@@ -94,3 +97,36 @@ Senha trocada pelo agente no bloco A: `Jean@2026` (o banco foi recriado para o b
 **Backlog:** A5/A28, A7, A9, A13, A14 (já era R1-A15), A15 (resto), A21, A22 (aviso), A24, A26, A27, A29, A30 (ordem).
 **Perguntas abertas:** A3 (taxa para o cliente), A20 (percentual como se fala), A25 (concluir obra com fases abertas).
 **Não procede:** A2 e A4 (decisões do Jean de 17/10), A31 (`<br />` entre "em" e a data; "2 meses" é a regra documentada), A32 (não reproduzido), "8 meses" do A15.
+
+---
+
+## Rodada 3 - 18/10/2026
+**Missões:** bloco A M1-M3 (vazio, depois continua); bloco B M4-M7 (semeado; interrompido por limite de uso e retomado). Relatório: [rodada-3/relatorio.md](rodada-3/relatorio.md). Plano: [rodada-3/plano.md](rodada-3/plano.md).
+Senha trocada no bloco A: `Jean@2026`. Bloco B: `carlos`/`carlos123` (campo, Casa Menezes), `ana`/`ana12345` (escritório).
+
+**Verificação da rodada 2:**
+- Bloco A: 10 de 11 ✅. A vírgula ficou ⚠️ por causa do Backspace: virou A1, corrigido.
+- Bloco B: 7 de 8 ✅. Valores ficaram ⚠️ quando o texto entra de uma vez (A11) e o popup ficou ⚠️ no celular (A12); os dois foram corrigidos.
+- A18 da rodada 2 (anexos do campo) ✅.
+- A1/A17 da rodada 2 (a receber) ✅, conferido à mão em três obras.
+
+**Achados:** 19. Alta 1 (A11), média 5 (A1, A2, A3, A12, A13), baixa 13. Todos os números conferidos à mão bateram.
+
+**Corrigidos (verificados por mim):**
+| Achado | Commit |
+|---|---|
+| A1 - Backspace depois da vírgula dividia por 100 | 253f722 |
+| A2 - inativar/ativar tirava a marca de incompleto | f8644ee |
+| A6 - "0" solto ao lado do Celular | 9174437 |
+| A3 - pergunta do preço engolia o clique | f11ffd0 |
+| A4 - janela de concluir mostra também a taxa com tudo pago | 3725db9 |
+| A11 - valor que entra de uma vez ficava 10× menor | fa2dfaf |
+| A12 - quantidade perdia dígito; pergunta espera sair dos campos | a58367a |
+| A17 - pergunta do preço com foco em "Só nesta nota" | f2c3f46 |
+| A16 - CSV com acento no nome | 1793e9e |
+| A10/A14 - "em18/10/2026" | 12b8397 |
+
+**Backlog:** A5 (em R1-A9), A8, A9 (em R1-A15), A15 (em R2-A21), A18 (unidade nos preços).
+**Perguntas abertas:** A13/A19 (pastas e exclusão do campo; o que o escritório pode), mais as três da rodada 2.
+**Não procede:** A7 ("8 meses"), A18 como número (cimento por kg), aba que para de responder (não reproduzido).
+**Fim do ciclo pedido (2 rodadas: 2 e 3).** A rodada 3 ainda trouxe 1 alta e 4 médias corrigíveis, e todas foram corrigidas aqui. As correções da rodada 3 ainda não passaram por uma rodada de verificação do agente.
