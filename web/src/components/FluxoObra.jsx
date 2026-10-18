@@ -262,7 +262,9 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
             {de(ativa.id).aberto > 0 && (
               <span className="text-[12px] text-perigo">
                 Ainda há R$ {formatMoeda(de(ativa.id).aberto)} em aberto nesta fase
-                {fechando.tipo === 'pct' && ', que entram na taxa quando forem pagos'}.
+                {fechando.tipo === 'pct' && (
+                  <>, que entram na taxa quando forem pagos: com tudo pago, R$ {formatMoeda(Math.round((de(ativa.id).realizado * fechando.valor) / 10000))} (é o que o A receber previsto já conta)</>
+                )}.
               </span>
             )}
           </span>
