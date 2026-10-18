@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatMoeda, formatPct, formatQtd, lerQtd, lerColado, teclaCorrida } from '../lib/format'
 
 // Digitação corrida: os dígitos escorrem da direita pra esquerda até as casas decimais.
@@ -8,6 +8,15 @@ function corrida(texto, onChange) {
   const digitos = texto.replace(/\D/g, '').slice(0, 15)
   onChange(digitos ? parseInt(digitos, 10) : 0)
 }
+
+// Focar seleciona tudo: o próximo dígito substitui o valor em vez de somar a ele.
+// O rAF passa do mouseup, que senão desfaz a seleção do clique.
+const selecionar = (e) => {
+  const el = e.currentTarget
+  requestAnimationFrame(() => document.activeElement === el && el.select())
+}
+
+const base = 'op-input text-right tabular-nums'
 
 // A corrida pela TECLA, não pelo texto: o dígito entra sempre no fim, esteja o cursor
 // onde estiver. Pelo texto, clicar no meio de "0,00" e digitar 450 dava 4.500,00, e
@@ -20,27 +29,50 @@ function corrida(texto, onChange) {
 // o segundo achava tudo selecionado e recomeçava: 3500000 virava 5.000,00 (rodada 2, A6).
 // Por isso a primeira tecla depois do foco conta como "tudo selecionado", e a seleção
 // atrasada não acontece mais se alguém já digitou.
-// Focar seleciona tudo: o próximo dígito substitui o valor em vez de somar a ele.
-// O rAF passa do mouseup, que senão desfaz a seleção do clique.
-const selecionar = (e) => {
-  const el = e.currentTarget
-  requestAnimationFrame(() => document.activeElement === el && el.select())
-}
-
-const base = 'op-input text-right tabular-nums'
-
+//
+// Teclado que não manda a tecla (Android, ditado) e texto que entra de uma vez
+// (preenchimento automático) chegam pelo `beforeinput`, com o que foi inserido em
+// `data`: um caractere segue a mesma corrida; mais de um é número escrito e se lê como
+// colado. Pelo `onChange` sobrava só o texto inteiro, e "1.234,5" virava 123,45 (rodada
+// 3, A11). O `onChange` fica de rede pro que nem o `beforeinput` traz.
 function Corrida({ value, onChange, formatar, cel, className, ...props }) {
   const sessao = useRef({ casas: null, recemFocado: false })
+  const campo = useRef(null)
+  // O listener nativo é registrado uma vez; lê o valor e o onChange da renderização atual.
+  const atual = useRef({ value, onChange })
+  atual.current = { value, onChange }
+
+  // Uma tecla da corrida. true = tratou (quem chamou cancela o evento).
+  function aplicar(el, t) {
+    const { value: v, onChange: muda } = atual.current
+    const tudo = sessao.current.recemFocado || (el.selectionStart === 0 && el.selectionEnd === el.value.length)
+    const novo = teclaCorrida({ valor: v, casas: sessao.current.casas }, t, tudo)
+    if (!novo) return false
+    sessao.current = { casas: novo.casas, recemFocado: false }
+    if (novo.valor !== v) muda(novo.valor)
+    return true
+  }
   function tecla(e) {
     if (e.ctrlKey || e.metaKey || e.altKey || e.currentTarget.readOnly) return
-    const el = e.currentTarget
-    const tudo = sessao.current.recemFocado || (el.selectionStart === 0 && el.selectionEnd === el.value.length)
-    const novo = teclaCorrida({ valor: value, casas: sessao.current.casas }, e.key, tudo)
-    if (!novo) return
-    e.preventDefault()
-    sessao.current = { casas: novo.casas, recemFocado: false }
-    if (novo.valor !== value) onChange(novo.valor)
+    if (aplicar(e.currentTarget, e.key)) e.preventDefault()
   }
+  useEffect(() => {
+    const el = campo.current
+    const antes = (ev) => {
+      if (el.readOnly) return
+      if (ev.inputType === 'insertText' && ev.data) {
+        ev.preventDefault()
+        if (ev.data.length === 1) return aplicar(el, ev.data)
+        sessao.current = { casas: null, recemFocado: false }
+        atual.current.onChange(lerColado(ev.data))
+      } else if (ev.inputType === 'deleteContentBackward' || ev.inputType === 'deleteContentForward') {
+        ev.preventDefault()
+        aplicar(el, 'Backspace')
+      }
+    }
+    el.addEventListener('beforeinput', antes)
+    return () => el.removeEventListener('beforeinput', antes)
+  }, [])
   function focar(e) {
     const el = e.currentTarget
     sessao.current = { casas: null, recemFocado: true }
@@ -50,6 +82,7 @@ function Corrida({ value, onChange, formatar, cel, className, ...props }) {
   }
   return (
     <input
+      ref={campo}
       inputMode="decimal"
       value={formatar(value)}
       onKeyDown={tecla}
