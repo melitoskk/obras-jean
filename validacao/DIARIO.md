@@ -28,12 +28,17 @@
 | R2-A30 | Lista da fase ordenada por data, com opção de inverter | pequeno |
 | R3-A8 | Etiqueta "Inativo" no cadastro de cliente/fornecedor inativo | pequeno |
 | R3-A18 | Unidade junto dos preços na nota ("R$ 0,78/kg") | pequeno |
+| R3-A13/A19 | **Permissões configuráveis** (Jean, 18/10/2026). Hoje são 3 papéis fixos (`auth.js`: `PAPEIS`, `ROTAS_CAMPO`, `autorizado`). Seria: tabela `perfil` (nome + lista de permissões) e `usuario.perfil_id`, com permissão avulsa por usuário por cima; os três papéis de hoje viram perfis prontos. Permissões por área e ação: ver dinheiro, lançar, editar cadastro, concluir/reabrir fase e taxa, Galeria por pasta (ver/enviar/excluir; excluir só o próprio), usuários. O servidor continua decidindo (`autorizado` lê o perfil), e a tela do admin ganha "Perfis". Exige autor em `arquivo` para "excluir só o próprio". | grande |
+| R2-A25 | `semear.js`: obra Concluída nasce com fases concluídas (com taxa) e nada a pagar | pequeno |
 
 ## Perguntas ao Jean
-1. **R2-A3 Taxa para o cliente.** Hoje a taxa devida só aparece no relatório de taxa. Você quer que ela apareça (a) no topo da obra, (b) na Visão do cliente e no extrato da fase? E quando o cliente paga a taxa, como você registra: como uma entrada comum, ou como um recebimento separado, que não vai para o caixa da obra?
-2. **R2-A20 Percentual.** O dinheiro continua como caixa eletrônico (450 = R$ 4,50). E o percentual: quando você digita "10" na taxa, deve dar 10% (como se fala) ou 0,10% (como o dinheiro)? Hoje dá 0,10%. Digitar "10," já dá 10%.
-3. **R2-A25 Concluir a obra.** Hoje dá para marcar a obra como Concluída com fases abertas e contas a pagar. Ao concluir a obra, o sistema deve (a) só avisar o que está aberto, (b) pedir para concluir cada fase com a taxa, ou (c) impedir até tudo estar fechado?
-4. **R3-A13/A19 O que o mestre e o escritório podem.** O mestre (campo) hoje vê todas as pastas da Galeria, inclusive Contrato e Cronograma físico-financeiro, que têm valores. Quais pastas ele deve ver: só Fotos, Projetos e Diário? Ele também pode excluir arquivo e foto que outra pessoa lançou. Deve excluir só o que ele mesmo lançou, como no diário? E o escritório, que hoje pode concluir e reabrir fase e escolher a taxa: fica assim, ou isso é só seu?
+1. **R2-A3 Pagamento da taxa.** Quando o cliente paga a taxa de administração, como você registra: como uma entrada comum (vai para o caixa da obra), ou como um recebimento separado, que não entra no caixa?
+
+### Respostas do Jean (18/10/2026)
+- **R2-A3 Taxa para o cliente:** "acho que pode ser" para mostrar a taxa. Feito em 47eaed7: cartão "Taxa devida" no topo da obra, faixa na Visão do cliente com o valor por fase e linha no extrato da fase concluída. Como registrar o pagamento da taxa ficou sem resposta (pergunta 1 acima).
+- **R2-A20 Percentual:** fica como caixa eletrônico, igual ao dinheiro: 10 = 0,10%, 1000 = 10%. Nada a mudar. Digitar "10," continua dando 10%.
+- **R2-A25 Concluir a obra:** (c) impedir até tudo estar fechado. Feito em acd6a35. A obra só passa a Concluída com toda fase ativa concluída e nenhuma conta a pagar, e a mensagem diz o que falta. Obra que já estava Concluída não é barrada. O banco semeado tem três assim, e o `semear.js` ainda gera esse caso (backlog).
+- **R3-A13/A19 Permissões:** criadas em tempo de uso. O administrador cria perfis ou define as permissões de cada usuário, em vez dos três papéis fixos. Foi para o backlog (abaixo).
 
 ### Respostas do Jean (17/10/2026)
 - **R1-A2 Taxa:** cada fase escolhe valor fixo OU percentual. A taxa é devida ao **fechar a fase**. O percentual incide **só sobre o que foi pago**.
