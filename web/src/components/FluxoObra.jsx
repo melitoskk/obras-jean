@@ -257,6 +257,14 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
             <span className="text-rotulo">
               Pago na fase: R$ {formatMoeda(pagoDa(ativa))} · Taxa devida: <b className="text-[#333]">R$ {formatMoeda(previa(fechando))}</b>
             </span>
+            {/* Conta em aberto não trava (fase concluída é marca, §11.2), mas avisa: no
+                percentual ela entra na taxa só quando for paga (rodada 2, A11). */}
+            {de(ativa.id).aberto > 0 && (
+              <span className="text-[12px] text-perigo">
+                Ainda há R$ {formatMoeda(de(ativa.id).aberto)} em aberto nesta fase
+                {fechando.tipo === 'pct' && ', que entram na taxa quando forem pagos'}.
+              </span>
+            )}
           </span>
         )}
         confirmLabel="Concluir fase"
