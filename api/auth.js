@@ -162,3 +162,12 @@ export const podeObra = (req, obraId) => {
 // Post do diário: o campo vê todos da obra, mas edita e exclui só os que ele escreveu
 // (Dúvida 20). Escritório e administrador continuam mexendo em qualquer um.
 export const podeEditarPost = (req, post) => req.papel !== 'campo' || post.autor_id === req.usuarioId
+// Anexo: GET /api/anexo/:ref está na lista do campo (diário e galeria), mas o ref sozinho
+// não diz de quem é. O campo abre só arquivo de obra dele (galeria, diário) ou a capa da
+// obra; nota fiscal de saída e comprovante de entrada ficam de fora - são dinheiro.
+const anexoDeObra = db.prepare(
+  'SELECT obra_id FROM arquivo WHERE ref = ? AND obra_id IS NOT NULL UNION SELECT id FROM obra WHERE foto = ?')
+export const podeAnexo = (req, ref) => {
+  const visiveis = obrasVisiveis(req)
+  return !visiveis || anexoDeObra.all(ref, ref).some((r) => visiveis.has(r.obra_id))
+}

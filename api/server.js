@@ -2,7 +2,7 @@ import { writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import express from 'express'
 import db from './db.js'
-import { login, logout, quemSou, exigirLogin, exigirPapel, obrasVisiveis, podeObra, podeEditarPost } from './auth.js'
+import { login, logout, quemSou, exigirLogin, exigirPapel, obrasVisiveis, podeObra, podeEditarPost, podeAnexo } from './auth.js'
 import rotasOrcamento, { CUSTO } from './rotas/orcamento.js'
 import rotasFornecedor from './rotas/fornecedor.js'
 import rotasUsuario from './rotas/usuario.js'
@@ -244,7 +244,7 @@ const IMAGEM = /\.(png|jpe?g|gif|webp|avif)$/i
 app.get('/api/anexo/:ref', (req, res) => {
   const ref = basename(req.params.ref) // basename corta qualquer ../ - não sai da pasta
   const p = join(ANEXOS, ref)
-  if (!ref.includes('__') || !existsSync(p)) return res.status(404).end()
+  if (!ref.includes('__') || !existsSync(p) || !podeAnexo(req, ref)) return res.status(404).end()
   const nome = ref.split('__').slice(1).join('__')
   if (req.query.inline && IMAGEM.test(nome)) {
     res.setHeader('X-Content-Type-Options', 'nosniff') // sem adivinhar tipo pelo conteúdo

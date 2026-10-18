@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os'
 const dir = mkdtempSync(join(tmpdir(), 'obras-'))
 process.env.OBRAS_DB = join(dir, 'teste.db')
 const { default: db } = await import('./db.js')
-const { autorizado, selo, abre, hashSenha, obrasVisiveis, podeObra, podeEditarPost } = await import('./auth.js')
+const { autorizado, selo, abre, hashSenha, obrasVisiveis, podeObra, podeEditarPost, podeAnexo } = await import('./auth.js')
 const { semAdmin } = await import('./rotas/usuario.js')
 
 const id = (r) => Number(r.lastInsertRowid)
@@ -80,6 +80,20 @@ assert.ok(!podeEditarPost(req, { autor_id: beto }))
 assert.ok(!podeEditarPost(req, { autor_id: null })) // post antigo sem dono
 assert.ok(podeEditarPost({ papel: 'escritorio', usuarioId: beto }, { autor_id: req.usuarioId }))
 assert.ok(db.prepare('PRAGMA table_info(diario)').all().some((c) => c.name === 'autor_id'))
+
+// 5c. Anexo (rodada 2, A18): a rota é do campo, mas o arquivo tem dono. O campo abre só
+// o que é da galeria/diário ou a foto de uma obra dele; nota de saída e de entrada, nunca.
+const arq = (obraId, ref) =>
+  db.prepare("INSERT INTO arquivo (obra_id, pasta, nome, ref, criado_em) VALUES (?, 'fotos', 'f', ?, '2026-10-03')").run(obraId, ref)
+arq(casa, '1-a__casa.jpg')
+arq(predio, '2-b__predio.jpg')
+db.prepare('UPDATE obra SET foto = ? WHERE id = ?').run('3-c__capa.jpg', casa)
+assert.ok(podeAnexo(req, '1-a__casa.jpg'))
+assert.ok(podeAnexo(req, '3-c__capa.jpg'))
+assert.ok(!podeAnexo(req, '2-b__predio.jpg')) // outra obra
+assert.ok(!podeAnexo(req, '4-d__nota.pdf')) // nota fiscal de saída: não está em arquivo nem é capa
+assert.ok(!podeAnexo(req, '9-z__solto.jpg'))
+assert.ok(podeAnexo({ papel: 'escritorio', usuarioId: beto }, '4-d__nota.pdf'))
 
 // 6. Sem administrador ativo o sistema trava o cadastro - a rota desfaz quando isso acontece.
 assert.ok(!semAdmin())
