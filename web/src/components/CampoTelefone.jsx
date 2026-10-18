@@ -15,7 +15,8 @@ export default function CampoTelefone({ valor, onValor, marcado, onMarcar }) {
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1.5">
         <Input value={valor ?? ''} onChange={(e) => onValor(mascaraTel(e.target.value))} />
-        {marcado && link && (
+        {/* `!!`: a marca vem do banco como 0/1, e `0 && ...` escrevia um "0" na tela (rodada 3, A6). */}
+        {!!marcado && link && (
           <a
             href={link}
             target="_blank"
