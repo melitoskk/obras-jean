@@ -40,7 +40,7 @@ export const SITUACOES = {
 const OPCOES_SITUACAO = Object.entries(SITUACOES).map(([valor, { label }]) => ({ valor, label }))
 
 // `pagina` só atravessa até o Registro: é ele que sabe ser modal ou tela.
-// `onCaixaMudou`: um lançamento no Fluxo mexe no saldo do topo, que vem da lista de
+// `onCaixaMudou`: um lançamento no Fluxo, ou o orçamento salvo, mexe nos números do topo, que vêm da lista de
 // obras - quem tem a lista (a página) recarrega. Não é `onSalvo`: no modal de nova
 // obra, onSalvo fecha o modal.
 export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCaixaMudou, onClienteCriado, pagina }) {
@@ -358,12 +358,12 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
           garantirOrcamento={async () => (await criarOrcamento(d.id)).id}
           fases={orc?.fases ?? []}
           servicos={orc?.servicos ?? []}
-          onSalvo={() => setOrc(undefined)}
+          onSalvo={() => { setOrc(undefined); onCaixaMudou?.() }}
         />
       )}
 
       {aba === 'orcamento' && orc !== undefined && (
-        <OrcamentoObra orcamento={orc} versoes={versoes} onSalvo={() => setOrc(undefined)} />
+        <OrcamentoObra orcamento={orc} versoes={versoes} onSalvo={() => { setOrc(undefined); onCaixaMudou?.() }} />
       )}
 
       {aba === 'fluxo' && <FluxoObra obraId={d.id} onFaixa={setFaixa} onMudou={onCaixaMudou} />}

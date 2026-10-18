@@ -92,6 +92,7 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
         taxa_tipo: t.tipo === 'sem' ? null : t.tipo, taxa_valor: t.tipo === 'sem' ? null : t.valor,
       })
       await carregar()
+      onMudou?.() // a taxa escolhida entra no "A receber" do topo
     } catch {
       return onFaixa?.({ tipo: 'erro', texto: 'Não foi possível concluir a fase.' })
     }
@@ -103,6 +104,7 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
     try {
       await concluirFase(ativa.id, null)
       await carregar()
+      onMudou?.()
     } catch {
       onFaixa?.({ tipo: 'erro', texto: 'Não foi possível reabrir a fase.' })
     }
