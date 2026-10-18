@@ -106,11 +106,26 @@ db.prepare("UPDATE fase SET taxa_tipo=NULL, taxa_valor=NULL WHERE id=?").run(fun
 assert.equal(taxaDe().taxa_devida, 0, 'concluída sem regra não deve taxa')
 db.prepare("UPDATE fase SET concluida_em=NULL WHERE id=?").run(fund)
 
-// A receber do cliente, PREVISTO pelo orçado: custo + taxa da estimativa − recebido.
-// A obra da Marina: 360.000 + 10% (36.000) − entrada de 50.000 = 346.000.
-assert.equal(aReceberPrevisto(360_000_00, 1000, 50_000_00), 346_000_00)
-assert.equal(aReceberPrevisto(0, 1000, 0), 0, 'sem orçado não há previsão')
-assert.equal(aReceberPrevisto(100_00, 0, 150_00), -50_00, 'recebeu além do orçado: negativo, não some')
+// A receber do cliente, PREVISTO (rodada 1 A6, rodada 2 A1/A17), fase a fase:
+// - aberta: o que custar (orçado, ou o gasto se já passou) + taxa da estimativa sobre isso;
+// - concluída: o custo é o gasto (o orçado não vem mais) + a taxa escolhida ao concluir.
+// A obra da Marina, Fundação concluída com R$ 5.000 fixos e o resto aberto a 10%:
+// (10.450,75 + 5.000) + (325.000 + 32.500) − 50.000 = 322.950,75.
+const marina = [
+  { orcado: 45_000_00, gasto: 10_450_75, pago: 6_200_00, concluida_em: '2026-10-17', taxa_tipo: 'fixo', taxa_valor: 5_000_00 },
+  { orcado: 325_000_00, gasto: 450_00, pago: 450_00 },
+]
+assert.equal(aReceberPrevisto(marina, 1000, 50_000_00), 322_950_75)
+// Percentual na concluída incide sobre TUDO o que ela gastou: a nota em aberto vai ser paga.
+assert.equal(aReceberPrevisto([{ ...marina[0], taxa_tipo: 'pct', taxa_valor: 1000 }], 1000, 0), 10_450_75 + 1_045_08)
+// Aberta acima do orçado: conta o gasto, não o orçado.
+assert.equal(aReceberPrevisto([{ orcado: 100_00, gasto: 150_00, pago: 0 }], 1000, 0), 165_00)
+// Concluída sem taxa escolhida: só o custo.
+assert.equal(aReceberPrevisto([{ ...marina[0], taxa_tipo: null }], 1000, 0), 10_450_75)
+// Obra concluída (a Casa Ribeiro): o orçado das fases abertas não vem mais; custo = gasto.
+assert.equal(aReceberPrevisto([{ orcado: 900_00, gasto: 150_00, pago: 0 }, marina[0]], 1000, 0, true), 150_00 + 10_450_75 + 5_000_00)
+assert.equal(aReceberPrevisto([], 1000, 0), 0, 'sem fase não há previsão')
+assert.equal(aReceberPrevisto([{ orcado: 100_00, gasto: 0, pago: 0 }], 0, 150_00), -50_00, 'recebeu além: negativo, não some')
 
 // ── Extrato da fase ──
 // Aporte no mesmo dia da nota de 02/10, lançado DEPOIS dela: vem depois. O saldo corre

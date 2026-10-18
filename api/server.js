@@ -82,6 +82,16 @@ app.get('/api/obras', (req, res) => {
   const pago = aggById('SELECT f.obra_id k, SUM(s.valor) v FROM saida s JOIN fase f ON f.id=s.fase_id WHERE s.pago_em IS NOT NULL GROUP BY f.obra_id')
   const entrada = aggById('SELECT obra_id k, SUM(valor) v FROM entrada GROUP BY obra_id')
   const taxa = aggById('SELECT obra_id k, taxa_adm v FROM orcamento WHERE ativo = 1')
+  // Fase a fase pro "A receber (previsto)": o orçado do orçamento vivo (fase ativa, como
+  // o `orcado` acima), o gasto e o pago de cada uma, e a taxa escolhida ao concluir.
+  const fasesDa = Map.groupBy(db.prepare(`
+    SELECT f.obra_id, f.concluida_em, f.taxa_tipo, f.taxa_valor,
+      CASE WHEN f.inativa = 0 THEN (SELECT COALESCE(SUM(${CUSTO}), 0) FROM servico s
+        JOIN orcamento o ON o.id = s.orcamento_id AND o.ativo = 1 WHERE s.fase_id = f.id) ELSE 0 END AS orcado,
+      (SELECT COALESCE(SUM(valor), 0) FROM saida WHERE fase_id = f.id) AS gasto,
+      (SELECT COALESCE(SUM(valor), 0) FROM saida WHERE fase_id = f.id AND pago_em IS NOT NULL) AS pago
+    FROM fase f
+  `).all(), (f) => f.obra_id)
   res.json(obras.map((o) => ({
     ...o,
     orcado: orcado[o.id] || 0,
@@ -91,7 +101,7 @@ app.get('/api/obras', (req, res) => {
     // Fluxo de caixa, aqui pro destaque no topo da obra (UPDATE.md §11.1).
     saldo: (entrada[o.id] || 0) - (gasto[o.id] || 0),
     caixa: (entrada[o.id] || 0) - (pago[o.id] || 0),
-    aReceber: aReceberPrevisto(orcado[o.id] || 0, taxa[o.id] || 0, entrada[o.id] || 0),
+    aReceber: aReceberPrevisto(fasesDa.get(o.id) ?? [], taxa[o.id] || 0, entrada[o.id] || 0, o.status === 'concluida'),
   })))
 })
 

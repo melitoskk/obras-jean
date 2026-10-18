@@ -88,11 +88,21 @@ export function taxaDevida({ concluida_em, taxa_tipo, taxa_valor }, pago) {
   return taxa_tipo === 'fixo' ? taxa_valor ?? 0 : Math.round((pago * (taxa_valor ?? 0)) / 10000)
 }
 
-// Quanto o cliente ainda deve, PREVISTO pelo orçado (validação, rodada 1, A6): por
-// administração não há preço fechado, então é custo orçado + taxa da estimativa −
-// o que já entrou. Negativo = recebeu além do orçado; não se esconde.
-export function aReceberPrevisto(orcado, taxaAdm, recebido) {
-  return orcado + Math.round((orcado * taxaAdm) / 10000) - recebido
+// Quanto o cliente ainda deve, PREVISTO (validação, rodada 1 A6; rodada 2 A1/A17): por
+// administração não há preço fechado, então soma-se fase a fase o que ela vai custar
+// mais a taxa, e tira-se o que já entrou. Fase aberta custa o orçado, ou o gasto se já
+// passou dele, com a taxa da estimativa por cima (o tipo só se escolhe ao concluir).
+// Fase concluída custa o que gastou - o orçado não vem mais - e leva a taxa escolhida
+// ao concluir; no percentual, sobre o gasto todo, porque a nota em aberto vai ser paga.
+// Obra concluída: toda fase já custou o que custou, aberta ou não.
+// Negativo = recebeu além do previsto; não se esconde.
+export function aReceberPrevisto(fases, taxaAdm, recebido, obraConcluida = false) {
+  const previsto = fases.reduce((a, f) => {
+    if (f.concluida_em || obraConcluida) return a + f.gasto + taxaDevida(f, f.gasto)
+    const custo = Math.max(f.orcado, f.gasto)
+    return a + custo + Math.round((custo * taxaAdm) / 10000)
+  }, 0)
+  return previsto - recebido
 }
 
 // ── 2 e 5. Estimado × realizado, e a taxa de administração ──────────────────────────
