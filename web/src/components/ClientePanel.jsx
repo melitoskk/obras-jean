@@ -61,14 +61,17 @@ export default function ClientePanel({ cliente, onFechar, onSalvo }) {
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }))
   const campo = (k) => ({ value: d[k] ?? '', onChange: (e) => set(k, e.target.value) })
 
-  async function salvar() {
-    if (!d.nome?.trim()) return setFaixa({ tipo: 'erro', texto: 'O nome é obrigatório.' })
+  // `extra` grava junto com o formulário: Inativar/Ativar confirma e já salva (rodada 2,
+  // A23). A confirmação diz "some da lista", e esperar um Salvar depois dela mentia.
+  async function salvar(extra = {}) {
+    const dados = { ...d, ...extra }
+    if (!dados.nome?.trim()) return setFaixa({ tipo: 'erro', texto: 'O nome é obrigatório.' })
     setSalvando(true)
     try {
       // Criar entra pelo mesmo POST do quick-create (só o nome) e o PATCH completa -
       // um caminho de gravação só, e o cliente já nasce sem a marca de incompleto.
-      const id = d.id ?? (await criarCliente(d.nome.trim())).id
-      const { id: _, obras: __, incompleto: ___, ...campos } = d
+      const id = dados.id ?? (await criarCliente(dados.nome.trim())).id
+      const { id: _, obras: __, incompleto: ___, ...campos } = dados
       await patchCliente(id, campos)
       setFaixa({ tipo: 'sucesso', texto: 'Operação executada com sucesso.' })
       // Devolve o id: quem chegou aqui vindo de um formulário de obra precisa saber
@@ -111,17 +114,20 @@ export default function ClientePanel({ cliente, onFechar, onSalvo }) {
       acoes={
         <BarraAcao>
           {/* Rótulo é a AÇÃO, não o estado: "Inativar cliente" diz o que o clique faz, e
-              o estado atual se lê por inversão (e na coluna Condição da lista). Só vale
-              ao salvar, como todo o resto do formulário. */}
-          <Botao
-            variante="pilula"
-            icone={d.ativo ? Ban : CircleCheck}
-            onClick={() => (d.ativo ? setInativando(true) : set('ativo', 1))}
-            title="Some da lista, nada é apagado"
-          >
-            {d.ativo ? 'Inativar cliente' : 'Ativar cliente'}
-          </Botao>
-          <Botao variante="acento" icone={Save} onClick={salvar} disabled={salvando}>Salvar</Botao>
+              o estado atual se lê por inversão (e na coluna Condição da lista). Grava
+              na hora, junto com o formulário (rodada 2, A23). */}
+          {/* Cadastro novo não tem o que inativar (rodada 2, A31). */}
+          {d.id && (
+            <Botao
+              variante="pilula"
+              icone={d.ativo ? Ban : CircleCheck}
+              onClick={() => (d.ativo ? setInativando(true) : (set('ativo', 1), salvar({ ativo: 1 })))}
+              title="Some da lista, nada é apagado"
+            >
+              {d.ativo ? 'Inativar cliente' : 'Ativar cliente'}
+            </Botao>
+          )}
+          <Botao variante="acento" icone={Save} onClick={() => salvar()} disabled={salvando}>Salvar</Botao>
         </BarraAcao>
       }
     >
@@ -258,7 +264,7 @@ export default function ClientePanel({ cliente, onFechar, onSalvo }) {
         message="Some da lista, nada é apagado. As obras continuam."
         confirmLabel="Inativar"
         onCancel={() => setInativando(false)}
-        onConfirm={() => { set('ativo', 0); setInativando(false) }}
+        onConfirm={() => { set('ativo', 0); setInativando(false); salvar({ ativo: 0 }) }}
       />
     </Registro>
   )

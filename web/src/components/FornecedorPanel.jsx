@@ -61,14 +61,17 @@ export default function FornecedorPanel({ fornecedor, onFechar, onSalvo }) {
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }))
   const campo = (k) => ({ value: d[k] ?? '', onChange: (e) => set(k, e.target.value) })
 
-  async function salvar() {
-    if (!d.nome?.trim()) return setFaixa({ tipo: 'erro', texto: 'O nome é obrigatório.' })
+  // `extra` grava junto com o formulário: Inativar/Ativar confirma e já salva (rodada 2,
+  // A23). A confirmação diz "some da lista", e esperar um Salvar depois dela mentia.
+  async function salvar(extra = {}) {
+    const dados = { ...d, ...extra }
+    if (!dados.nome?.trim()) return setFaixa({ tipo: 'erro', texto: 'O nome é obrigatório.' })
     setSalvando(true)
     try {
       // Criar entra pelo mesmo POST do quick-create (só o nome) e o PATCH completa -
       // um caminho de gravação só, e o fornecedor já nasce sem a marca de incompleto.
-      const id = d.id ?? (await criarFornecedor(d.nome.trim())).id
-      const { id: _, incompleto: __, compras: ___, ultima: ____, total: _____, ...campos } = d
+      const id = dados.id ?? (await criarFornecedor(dados.nome.trim())).id
+      const { id: _, incompleto: __, compras: ___, ultima: ____, total: _____, ...campos } = dados
       await patchFornecedor(id, campos)
       await salvarVinculos('fornecedores', id, itens)
       setFaixa({ tipo: 'sucesso', texto: 'Operação executada com sucesso.' })
@@ -98,15 +101,18 @@ export default function FornecedorPanel({ fornecedor, onFechar, onSalvo }) {
       faixa={faixa && <Faixa tipo={faixa.tipo} onFim={() => setFaixa(null)}>{faixa.texto}</Faixa>}
       acoes={
         <BarraAcao>
-          <Botao
-            variante="pilula"
-            icone={d.ativo ? Ban : CircleCheck}
-            onClick={() => (d.ativo ? setInativando(true) : set('ativo', 1))}
-            title="Some da lista, nada é apagado"
-          >
-            {d.ativo ? 'Inativar fornecedor' : 'Ativar fornecedor'}
-          </Botao>
-          <Botao variante="acento" icone={Save} onClick={salvar} disabled={salvando}>Salvar</Botao>
+          {/* Cadastro novo não tem o que inativar (rodada 2, A31). */}
+          {d.id && (
+            <Botao
+              variante="pilula"
+              icone={d.ativo ? Ban : CircleCheck}
+              onClick={() => (d.ativo ? setInativando(true) : (set('ativo', 1), salvar({ ativo: 1 })))}
+              title="Some da lista, nada é apagado"
+            >
+              {d.ativo ? 'Inativar fornecedor' : 'Ativar fornecedor'}
+            </Botao>
+          )}
+          <Botao variante="acento" icone={Save} onClick={() => salvar()} disabled={salvando}>Salvar</Botao>
         </BarraAcao>
       }
     >
@@ -202,7 +208,7 @@ export default function FornecedorPanel({ fornecedor, onFechar, onSalvo }) {
         message="Some da lista e do lançamento. As compras ficam no histórico."
         confirmLabel="Inativar"
         onCancel={() => setInativando(false)}
-        onConfirm={() => { set('ativo', 0); setInativando(false) }}
+        onConfirm={() => { set('ativo', 0); setInativando(false); salvar({ ativo: 0 }) }}
       />
     </Registro>
   )
