@@ -100,8 +100,14 @@ assert.equal(digita(',5').valor, 50)
 assert.equal(digita('12,3,4').valor, 1234) // segunda vírgula não faz nada
 assert.equal(digita('12,34<').valor, 1230)
 assert.equal(digita('12,34<<').valor, 1200)
-assert.equal(digita('12,34<<<').valor, 12) // apagou a vírgula: volta a ser 0,12
-assert.equal(digita('12,34<<<5').valor, 125)
+// Depois da vírgula o Backspace só apaga dígito, nunca volta pro caixa eletrônico no
+// meio da edição (rodada 3, A1): "1.234,5" + 2 Backspaces era 12,34.
+assert.equal(digita('1.234,5<').valor, 123400)
+assert.equal(digita('1.234,5<<').valor, 12300) // apagou o 4: 123,00
+assert.equal(digita('1.234,5<<,7').valor, 12370)
+assert.equal(digita('12,34<<<').valor, 100) // 12,30 → 12,00 → 1,00
+assert.equal(digita('12,34<<<5').valor, 150) // segue nos centavos: 1,50
+assert.equal(digita('12,<<<').valor, 0)
 assert.equal(digita('123<').valor, 12)
 // Tudo selecionado: a primeira tecla recomeça do zero.
 assert.equal(teclaCorrida({ valor: 99900, casas: null }, '7', true).valor, 7)

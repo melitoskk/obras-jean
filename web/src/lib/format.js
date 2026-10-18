@@ -32,7 +32,7 @@ export const lerColado = (texto) => Math.round(lerQtd(texto) * 100)
 // Digitação corrida, uma tecla por vez. `valor` em centésimos; `casas` é null antes da
 // vírgula (caixa eletrônico: 450 = 4,50 - decidido com o Jean em 17/10/2026) e 0-2
 // depois dela, quando o que veio antes vira reais e cada dígito preenche um centavo:
-// "1.234,5" = 1.234,50 (rodada 2, A16). O ponto é de milhar e não faz nada. `tudo` =
+// "1.234,5" = 1.234,50 (rodada 2, A16). Depois da vírgula, Backspace só apaga dígito. O ponto é de milhar e não faz nada. `tudo` =
 // conteúdo selecionado: recomeça do zero. Devolve null pra tecla que não é da corrida.
 export function teclaCorrida(estado, tecla, tudo) {
   const { valor, casas } = tudo ? { valor: 0, casas: null } : estado
@@ -49,7 +49,8 @@ export function teclaCorrida(estado, tecla, tudo) {
     if (tudo) return { valor: 0, casas: null }
     if (casas === 2) return { valor: valor - (valor % 10), casas: 1 }
     if (casas === 1) return { valor: valor - (valor % 100), casas: 0 }
-    if (casas === 0) return { valor: valor / 100, casas: null }
+    // Sem centavo digitado, apaga o último real e continua depois da vírgula (rodada 3, A1).
+    if (casas === 0) return { valor: Math.floor(valor / 1000) * 100, casas: 0 }
     return { valor: Math.floor(valor / 10), casas }
   }
   return null
