@@ -87,6 +87,10 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
   async function concluir() {
     const t = fechando
     setFechando(null)
+    // Fixa a fase no endereço: sem isso, a ativa era "a primeira não concluída" e, ao
+    // recarregar, pulava sozinha pra seguinte - que então sumia das opções de "pra qual
+    // fase a obra vai agora?" (rodada 2, A30).
+    irFase(ativa.id)
     try {
       await concluirFase(ativa.id, hoje(), {
         taxa_tipo: t.tipo === 'sem' ? null : t.tipo, taxa_valor: t.tipo === 'sem' ? null : t.valor,
