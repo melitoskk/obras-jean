@@ -6,7 +6,7 @@ import { login, logout, quemSou, exigirLogin, exigirPapel, obrasVisiveis, podeOb
 import rotasOrcamento, { CUSTO } from './rotas/orcamento.js'
 import rotasFornecedor from './rotas/fornecedor.js'
 import rotasUsuario from './rotas/usuario.js'
-import rotasRelatorio, { aReceberPrevisto } from './rotas/relatorio.js'
+import rotasRelatorio, { aReceberPrevisto, taxaDevida } from './rotas/relatorio.js'
 import rotasVisao from './rotas/visao.js'
 import { enviarCsv, reais, numeroLancamento } from './csv.js'
 
@@ -102,6 +102,8 @@ app.get('/api/obras', (req, res) => {
     saldo: (entrada[o.id] || 0) - (gasto[o.id] || 0),
     caixa: (entrada[o.id] || 0) - (pago[o.id] || 0),
     aReceber: aReceberPrevisto(fasesDa.get(o.id) ?? [], taxa[o.id] || 0, entrada[o.id] || 0, o.status === 'concluida'),
+    // Taxa de administração já devida: fases concluídas, sobre o pago (Jean, 18/10/2026).
+    taxaDevida: (fasesDa.get(o.id) ?? []).reduce((a, f) => a + taxaDevida(f, f.pago), 0),
   })))
 })
 

@@ -94,6 +94,20 @@ export default function VisaoCliente({ obraId, situacao }) {
           </div>
         </section>
 
+        {/* Taxa de administração devida (Jean, 18/10/2026: o cliente vê a taxa). Só das
+            fases concluídas: é quando ela passa a ser devida. */}
+        {v.taxa > 0 && (
+          <section className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border border-grade-linha px-3 py-2">
+            <span>
+              <span className="text-rotulo">Taxa de administração devida </span>
+              <b className="tabular-nums text-[#333]">{formatBRL(v.taxa)}</b>
+            </span>
+            <span className="text-[11px] text-[#888]">
+              {v.fases.filter((f) => f.taxa_devida > 0).map((f) => `${f.codigo} - ${f.nome}: ${formatBRL(f.taxa_devida)}`).join(' · ')}
+            </span>
+          </section>
+        )}
+
         {v.fases.length === 0 ? (
           <EmptyState titulo="Esta obra ainda não tem estimativa nem lançamentos." />
         ) : (

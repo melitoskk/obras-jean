@@ -196,7 +196,7 @@ export function extratoFase(obraId, faseId = null) {
   `).get(obraId)
   if (!obra) return null
   const fases = db.prepare(`
-    SELECT f.id, f.codigo, f.nome, f.concluida_em FROM fase f
+    SELECT f.id, f.codigo, f.nome, f.concluida_em, f.taxa_tipo, f.taxa_valor FROM fase f
     WHERE f.obra_id = ? AND (f.inativa = 0
       OR EXISTS (SELECT 1 FROM saida s WHERE s.fase_id = f.id)
       OR EXISTS (SELECT 1 FROM entrada e WHERE e.fase_id = f.id))
@@ -255,7 +255,10 @@ export function extratoFase(obraId, faseId = null) {
       ...(l.tipo === 'saida' && { vencimento: l.vencimento, pago_em: l.pago_em }),
     }
   })
-  return { obra, fases, fase, lancamentos }
+  // A taxa devida da fase vai no extrato (Jean, 18/10/2026: o cliente vê a taxa), pela
+  // mesma `taxaDevida` do relatório e do topo: sobre o que foi pago.
+  const pago = saidas.filter((l) => l.pago_em).reduce((a, l) => a + l.valor, 0)
+  return { obra, fases, fase: { ...fase, taxa_devida: taxaDevida(fase, pago) }, lancamentos }
 }
 
 r.get('/api/relatorios/extrato-fase', (req, res) => {

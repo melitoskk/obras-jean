@@ -65,6 +65,14 @@ assert.ok(!texto.includes('Concreteira'), 'nome de fornecedor não sai')
 assert.ok(!texto.includes('concreto da'), 'descrição de lançamento não sai')
 assert.ok(!/margem|custo_mo|custo_mat/.test(texto), 'margem e custo unitário não saem')
 
+// Taxa de administração (Jean, 18/10/2026: o cliente vê a taxa). Só a DEVIDA, das
+// fases concluídas, pela regra escolhida ao concluir: aberta não deve taxa ainda.
+assert.equal(v.taxa, 0, 'sem fase concluída não há taxa devida')
+db.prepare("UPDATE fase SET concluida_em = '2026-09-30', taxa_tipo = 'fixo', taxa_valor = 1_000_00 WHERE id = ?").run(fund)
+const vt = visaoCliente(obra)
+assert.equal(vt.taxa, 1_000_00)
+assert.equal(vt.fases[0].taxa_devida, 1_000_00)
+
 assert.equal(visaoCliente(999), null)
 
 rmSync(dir, { recursive: true, force: true })

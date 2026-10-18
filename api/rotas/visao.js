@@ -27,8 +27,9 @@ export function visaoCliente(obraId) {
   // Os serviços e lançamentos ficam pra trás: o cliente vê a fase.
   const { fases } = estimadoRealizado(obraId)
   const porFase = fases
-    .filter((f) => f.estimado || f.realizado)
-    .map(({ id, codigo, nome, concluida_em, estimado, realizado }) => ({ id, codigo, nome, concluida_em, estimado, realizado }))
+    .filter((f) => f.estimado || f.realizado || f.taxa_devida)
+    .map(({ id, codigo, nome, concluida_em, estimado, realizado, taxa_devida }) =>
+      ({ id, codigo, nome, concluida_em, estimado, realizado, taxa_devida }))
 
   // Por mês, sem acumular: quem desenha acumula. Realizado pela data da nota (a mesma
   // do extrato), investido pela data da entrada.
@@ -61,6 +62,9 @@ export function visaoCliente(obraId) {
     obra,
     // Saldo é o do destaque do topo (§11.1): entradas − tudo lançado.
     investido, executado, saldo: investido - executado, estimado: soma('estimado'),
+    // A taxa de administração DEVIDA, das fases concluídas (Jean, 18/10/2026: o cliente
+    // vê a taxa). A mesma `taxaDevida` do relatório e do topo da obra.
+    taxa: soma('taxa_devida'),
     fases: porFase,
     meses: [...meses.values()].sort((a, b) => a.ym.localeCompare(b.ym)),
     fotos,

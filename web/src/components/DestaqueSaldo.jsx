@@ -5,7 +5,7 @@ import { formatMoeda } from '../lib/format'
 // escrita embaixo, porque saldo e caixa usam as mesmas parcelas e trocar um pelo
 // outro dá um valor plausível e errado (o mesmo motivo de fluxo.test.mjs existir).
 // Saldo primeiro e maior: é a pergunta "a obra está no azul?".
-export default function DestaqueSaldo({ saldo = 0, caixa = 0, aPagar = 0, aReceber = 0 }) {
+export default function DestaqueSaldo({ saldo = 0, caixa = 0, aPagar = 0, aReceber = 0, taxaDevida = 0 }) {
   return (
     <div className="flex flex-wrap items-stretch gap-2 pb-2">
       <Indicador rotulo="Saldo" conta="entradas − tudo lançado" valor={saldo} grande />
@@ -16,6 +16,14 @@ export default function DestaqueSaldo({ saldo = 0, caixa = 0, aPagar = 0, aReceb
           <span className="text-rotulo">A pagar</span>
           <b className="text-[17px] leading-tight tabular-nums text-laranja">R$ {formatMoeda(aPagar)}</b>
           <span className="text-[11px] text-[#888]">lançado, ainda sem o Pago</span>
+        </div>
+      )}
+      {/* A taxa de administração já devida, das fases concluídas (Jean, 18/10/2026). */}
+      {taxaDevida > 0 && (
+        <div className="flex min-w-[140px] flex-col justify-center border border-grade-linha px-3 py-1.5">
+          <span className="text-rotulo">Taxa devida</span>
+          <b className="text-[17px] leading-tight tabular-nums text-[#333]">R$ {formatMoeda(taxaDevida)}</b>
+          <span className="text-[11px] text-[#888]">fases concluídas</span>
         </div>
       )}
       {/* Quanto o cliente ainda deve - previsão fase a fase (relatorio.js aReceberPrevisto),

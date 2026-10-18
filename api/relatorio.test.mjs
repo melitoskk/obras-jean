@@ -152,6 +152,13 @@ assert.equal(ex.lancamentos[3].historico, 'Aporte do cliente')
 assert.deepEqual(extratoFase(obra).lancamentos, [])
 assert.equal(extratoFase(obra, fundOutra).fase, null)
 assert.equal(extratoFase(999), null)
+// Fase concluída: o extrato leva a regra e a taxa devida (Jean, 18/10/2026: o cliente
+// vê a taxa). 10% sobre o pago da fundação: 1.300 + 700 pagos = 200,00.
+assert.equal(extratoFase(obra, fund).fase.taxa_devida, 0, 'aberta não deve taxa')
+db.prepare("UPDATE fase SET concluida_em = '2026-10-05', taxa_tipo = 'pct', taxa_valor = 1000 WHERE id = ?").run(fund)
+assert.deepEqual((({ taxa_tipo, taxa_valor, taxa_devida }) => ({ taxa_tipo, taxa_valor, taxa_devida }))(extratoFase(obra, fund).fase),
+  { taxa_tipo: 'pct', taxa_valor: 1000, taxa_devida: 200_00 })
+db.prepare('UPDATE fase SET concluida_em = NULL, taxa_tipo = NULL, taxa_valor = NULL WHERE id = ?').run(fund)
 
 rmSync(dir, { recursive: true, force: true })
 console.log('relatorio.test: ok')

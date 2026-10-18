@@ -319,6 +319,9 @@ function Credor({ filtro, setFiltro }) {
   )
 }
 
+// Regra da taxa da fase, como foi escolhida ao concluir. Do relatório de taxa e do extrato.
+const regra = (f) => (!f.taxa_tipo ? '' : f.taxa_tipo === 'fixo' ? 'Valor fixo' : `${formatPct(f.taxa_valor)}% do pago`)
+
 // ── 5. Taxa de administração ────────────────────────────────────────────────────────
 // A taxa DEVIDA é por fase, escolhida ao concluir (decidido com o Jean em 17/10/2026):
 // valor fixo ou % sobre o que foi PAGO na fase; quem calcula é o servidor (`taxaDevida`).
@@ -333,8 +336,6 @@ function Administracao({ filtro, setFiltro, opcoesObra }) {
   const admPrevista = adm(somaFases(fases, 'estimado'))
   const devida = somaFases(fases, 'taxa_devida')
   const semRegra = fases.filter((f) => f.concluida_em && !f.taxa_tipo).length
-  const regra = (f) => (!f.taxa_tipo ? '' : f.taxa_tipo === 'fixo' ? 'Valor fixo' : `${formatPct(f.taxa_valor)}% do pago`)
-
   return (
     <>
       <Filtros>
@@ -518,6 +519,11 @@ function FolhaExtrato({ dados, totais }) {
         <b className={`border-t border-grade-linha pt-1 text-right tabular-nums ${saldo < 0 ? 'text-perigo' : 'text-[#3d833d]'}`}>
           {saldo < 0 ? '− ' : '+ '}R$ {formatMoeda(Math.abs(saldo))}
         </b>
+        {/* Taxa de administração da fase concluída (Jean, 18/10/2026: o cliente vê a taxa). */}
+        {fase.concluida_em && fase.taxa_tipo && <>
+          <span className="pt-1">Taxa de administração <span className="text-[#777]">({regra(fase)})</span></span>
+          <span className="pt-1 text-right tabular-nums">R$ {formatMoeda(fase.taxa_devida)}</span>
+        </>}
       </section>
 
       <footer className="mt-2 border-t border-grade-linha pt-1.5 text-[10px] text-[#999]">
