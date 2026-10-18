@@ -145,7 +145,9 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
     setSalvando(true)
     try {
       const { id, cliente: _, orcado: __, gasto: ___, caixa: ____, criada_em: _____, ...campos } = d
-      if (id) await patchObra(id, campos)
+      // Só o que mudou desde que a obra foi carregada (rodada 2, A22): mandando tudo, a
+      // aba que salvava por último devolvia os campos velhos e apagava o que a outra gravou.
+      if (id) await patchObra(id, Object.fromEntries(Object.entries(campos).filter(([k, v]) => v !== obra?.[k])))
       else await criarObra(campos)
       setFaixa({ tipo: 'sucesso', texto: 'Operação executada com sucesso.' })
       onSalvo?.()
@@ -187,11 +189,11 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
       destaque={d.id && !soCampo && <DestaqueSaldo saldo={obra?.saldo} caixa={obra?.caixa} aPagar={obra?.aPagar} aReceber={obra?.aReceber} />}
       faixa={faixa && <Faixa tipo={faixa.tipo} onFim={() => setFaixa(null)}>{faixa.texto}</Faixa>}
       // Fases, Orçamento e Fluxo têm Salvar PRÓPRIO (gravam fase/valor/lançamento, não
-      // o cadastro). Dois
+      // o cadastro); Diário e Galeria gravam ao registrar (rodada 2, A15). Dois
       // botões "Salvar" na mesma tela é o que fez o primeiro teste falhar: clica-se no
       // do rodapé, que gravava só nome e endereço, e a seleção ia pro lixo.
       acoes={
-        soCampo || ['fases', 'orcamento', 'fluxo', 'cliente'].includes(aba) ? null : (
+        soCampo || ['fases', 'orcamento', 'fluxo', 'cliente', 'diario', 'galeria'].includes(aba) ? null : (
           <BarraAcao>
             <Botao variante="acento" icone={Save} onClick={salvar} disabled={salvando}>Salvar</Botao>
           </BarraAcao>
