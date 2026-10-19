@@ -9,6 +9,7 @@ import rotasUsuario from './rotas/usuario.js'
 import rotasRelatorio, { aReceberPrevisto, taxaDevida, pendenteParaConcluir } from './rotas/relatorio.js'
 import rotasVisao from './rotas/visao.js'
 import { enviarCsv, reais } from './csv.js'
+import { dataValida } from './datas.js'
 
 // Anexos ficam no mesmo volume do .db - backup continua sendo copiar /data.
 const ANEXOS = process.env.ANEXOS_DIR || '/data/anexos'
@@ -196,7 +197,7 @@ app.get('/api/obra/:id', (req, res) => {
   // usa as fases só pelo NOME, no Combobox e no rótulo do Dia a dia. As fases são da
   // obra e ponto - não há versão pra escolher, nem nome repetido no Combobox.
   const fases = db.prepare(
-    'SELECT id, nome, ordem, inativa FROM fase WHERE obra_id = ? ORDER BY ordem',
+    'SELECT id, codigo, nome, ordem, inativa FROM fase WHERE obra_id = ? ORDER BY ordem',
   ).all(id)
   const entradas = db.prepare('SELECT id, fase_id, valor, data, descricao, anexo FROM entrada WHERE obra_id = ? ORDER BY data').all(id)
   const saidasRaw = db.prepare(
@@ -219,7 +220,7 @@ app.get('/api/obra/:id', (req, res) => {
   // de refresh. Se um feed passar de umas centenas de posts, aí vira GET paginado.
   const anexosDo = db.prepare('SELECT id, nome, ref FROM arquivo WHERE diario_id = ? ORDER BY id')
   const diario = db.prepare(
-    'SELECT id, fase_id, texto, autor, autor_id, criado_em FROM diario WHERE obra_id = ? ORDER BY criado_em DESC, id DESC',
+    'SELECT id, fase_id, texto, autor, autor_id, criado_em, data FROM diario WHERE obra_id = ? ORDER BY data DESC, criado_em DESC, id DESC',
   ).all(id).map(({ autor_id, ...d }) => ({ ...d, editavel: podeEditarPost(req, { autor_id }), anexos: anexosDo.all(d.id) }))
   // Pasta que a pessoa não pode ver não sai (Documentos); `editavel` diz se ela pode excluir.
   const arquivos = db.prepare(
@@ -290,6 +291,21 @@ app.get('/api/anexo/:ref', (req, res) => {
 // (PUT /api/orcamento/:id/fases), e as duas primeiras gravavam justamente a coluna que
 // ninguém lia. Fase nasce, muda de valor e morre pelo módulo Orçamento, num lugar só.
 
+// Datas que entram por lançamento e diário (rodada 1, A18): existem e têm ano entre 2000
+// e 2100. Uma checagem só, antes das rotas: `data` é obrigatória no POST; vencimento e
+// pagamento, quando vierem preenchidos.
+app.use(['/api/entradas', '/api/saidas', '/api/diario'], (req, res, next) => {
+  if (req.method !== 'POST' && req.method !== 'PATCH') return next()
+  const b = req.body ?? {}
+  const nome = { data: 'data', vencimento: 'vencimento', pago_em: 'data do pagamento' }
+  for (const k of Object.keys(nome)) {
+    if (b[k] != null && b[k] !== '' && !dataValida(b[k])) return res.status(400).json({ erro: `${nome[k]} inválida` })
+  }
+  // No diário a data é opcional (vale hoje); lançamento sem data não existe.
+  if (req.method === 'POST' && req.baseUrl !== '/api/diario' && !b.data) return res.status(400).json({ erro: 'a data é obrigatória' })
+  next()
+})
+
 // --- Entradas ---
 app.post('/api/entradas', (req, res) => {
   const { obra_id, fase_id, valor, data, descricao = null, anexo = null } = req.body
@@ -354,10 +370,11 @@ function escreverSaida(body, id) {
   const ins = db.prepare(`INSERT INTO saida (${COLS_SAIDA}, criado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
   const quando = agora()
 
-  // O check "Pago" do próprio lançamento - quem paga é quem lança. Sem baixa, sem
-  // observação: desmarcar limpa as duas, senão sobrava "pix" numa conta em aberto.
+  // O check "Pago" do próprio lançamento - quem paga é quem lança. A observação vale
+  // nos dois estados (rodada 2, A9): paga, é como se pagou ("pix"); em aberto, é o boleto
+  // ou a linha digitável de quem vai pagar. A tela mostra o rótulo de cada caso.
   const pago_em = 'pago_em' in body ? body.pago_em : null
-  const pago_obs = pago_em ? (body.pago_obs || null) : null
+  const pago_obs = body.pago_obs || null
 
   db.exec('BEGIN')
   try {
@@ -414,10 +431,12 @@ app.post('/api/diario', (req, res) => {
   if (!texto?.trim()) return res.status(400).json({ erro: 'texto é obrigatório' })
   if (!podeObra(req, obra_id)) return res.status(404).json({ erro: 'obra não encontrada' })
   const agora = new Date().toISOString()
+  // O dia do que aconteceu (rodada 2, A24): à noite se registra o de ontem. Sem data, hoje.
+  const data = req.body.data || hoje()
   db.exec('BEGIN')
   try {
-    const id = Number(db.prepare('INSERT INTO diario (obra_id, fase_id, texto, autor, autor_id, criado_em) VALUES (?,?,?,?,?,?)')
-      .run(obra_id, fase_id, texto.trim(), req.usuario, req.usuarioId, agora).lastInsertRowid)
+    const id = Number(db.prepare('INSERT INTO diario (obra_id, fase_id, texto, autor, autor_id, criado_em, data) VALUES (?,?,?,?,?,?,?)')
+      .run(obra_id, fase_id, texto.trim(), req.usuario, req.usuarioId, agora, data).lastInsertRowid)
     const ins = db.prepare('INSERT INTO arquivo (obra_id, pasta, nome, ref, criado_em, diario_id, autor_id) VALUES (?,?,?,?,?,?,?)')
     for (const a of anexos) ins.run(obra_id, 'dia_a_dia', a.nome, a.ref, agora, id, req.usuarioId)
     db.exec('COMMIT')
@@ -427,8 +446,8 @@ app.post('/api/diario', (req, res) => {
     throw e
   }
 })
-// Editar texto, fase e anexos. O autor e o criado_em não mudam: quem escreveu
-// escreveu, e quando. `anexos` é o conjunto final - o que sumiu da lista sai do
+// Editar texto, fase, data e anexos. O autor e o criado_em não mudam: quem escreveu
+// escreveu, e quando registrou; `data` é o dia do que aconteceu, e esse se corrige. `anexos` é o conjunto final - o que sumiu da lista sai do
 // banco, o que apareceu entra.
 app.patch('/api/diario/:id', (req, res) => {
   const id = Number(req.params.id)
@@ -440,7 +459,7 @@ app.patch('/api/diario/:id', (req, res) => {
   if (!podeEditarPost(req, post)) return res.status(403).json({ erro: 'só quem escreveu edita o registro' })
   db.exec('BEGIN')
   try {
-    db.prepare('UPDATE diario SET fase_id = ?, texto = ? WHERE id = ?').run(fase_id, texto.trim(), id)
+    db.prepare('UPDATE diario SET fase_id = ?, texto = ?, data = COALESCE(?, data) WHERE id = ?').run(fase_id, texto.trim(), req.body.data || null, id)
     const antigos = db.prepare('SELECT id, ref FROM arquivo WHERE diario_id = ?').all(id)
     const refs = new Set(anexos.map((a) => a.ref))
     const del = db.prepare('DELETE FROM arquivo WHERE id = ?')

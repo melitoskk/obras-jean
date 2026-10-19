@@ -424,6 +424,18 @@ for (const [t, n] of [['entrada', '2*id-2'], ['saida', '2*id-1']]) {
   }
 }
 
+// Dia do registro do diário (rodada 2, A24): o que aconteceu ontem se registra hoje à
+// noite. `criado_em` continua sendo quando se registrou; o que já existia vale o dia dele.
+if (!db.prepare('PRAGMA table_info(diario)').all().some((c) => c.name === 'data')) {
+  db.exec('ALTER TABLE diario ADD COLUMN data TEXT')
+  db.exec('UPDATE diario SET data = substr(criado_em, 1, 10)')
+}
+// Quem insere sem `data` (semear.js, testes, versão velha da tela) fica com o dia do registro.
+db.exec(`
+  CREATE TRIGGER IF NOT EXISTS diario_data AFTER INSERT ON diario WHEN NEW.data IS NULL
+  BEGIN UPDATE diario SET data = substr(NEW.criado_em, 1, 10) WHERE id = NEW.id; END;
+`)
+
 // Número do lançamento (UPDATE.md §9). POR OBRA, entrada e saída na mesma sequência
 // (Jean, 19/10/2026): uma pasta física de comprovantes por obra, e o Nº 2 é o 2º papel
 // dela. Substituiu o `E-000231` / `S-000412` global por tipo (03/10/2026).

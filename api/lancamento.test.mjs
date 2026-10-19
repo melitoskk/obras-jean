@@ -62,6 +62,14 @@ assert.deepEqual([numero('saida', s1), numero('entrada', e1), numero('saida', s3
 assert.equal(numero('entrada', entrada()), 4, 'depois de renumerar, o próximo segue do fim')
 assert.equal(numero('saida', saidaEm(faseOutra)), 2)
 
+// --- Data aceita (rodada 1, A18): existe e tem ano entre 2000 e 2100 ---
+const { dataValida } = await import('./datas.js')
+assert.ok(dataValida('2026-10-19'))
+assert.ok(dataValida('2028-02-29'), 'bissexto')
+for (const ruim of ['62027-10-01', '1999-12-31', '2101-01-01', '2026-02-30', '2026-13-01', '19/10/2026', '', null]) {
+  assert.ok(!dataValida(ruim), String(ruim))
+}
+
 // --- §6: serviço de catálogo atravessa versões ---
 const orcId = novoOrcamento(obraId)
 const insServ = db.prepare(`

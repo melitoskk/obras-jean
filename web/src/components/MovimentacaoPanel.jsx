@@ -86,6 +86,7 @@ export default function MovimentacaoPanel({
   // Fase concluída também só avisa (UPDATE.md §11.2, Dúvida 13): a nota atrasada
   // chega depois de a fase acabar, e ela é da fase mesmo assim.
   const concluidaEm = fases.find((f) => f.id === faseId)?.concluida_em
+  const depoisDe = (dias) => new Date(Date.now() + dias * 864e5).toISOString().slice(0, 10)
   // Sinaliza, não bloqueia: estouro pinta de vermelho e salva do mesmo jeito.
   const estouro =
     tipo === 'saida' && faseId && previstoDaFase
@@ -161,8 +162,9 @@ export default function MovimentacaoPanel({
       // Rajada: limpa e continua aberto, com os números atualizando atrás.
       limpar()
       setFaixa({ tipo: 'sucesso', texto: 'Lançado.' })
-    } catch {
-      setFaixa({ tipo: 'erro', texto: 'Não foi possível salvar.' })
+    } catch (e) {
+      // `e.erro` é a frase do servidor ("data inválida").
+      setFaixa({ tipo: 'erro', texto: e.erro ? `Não foi possível salvar: ${e.erro}.` : 'Não foi possível salvar.' })
     } finally {
       salvandoRef.current = false
       setSalvando(false)
@@ -289,7 +291,7 @@ export default function MovimentacaoPanel({
           />
         </Campo>
         <Campo label="Data" req>
-          <input type="date" className="op-input" value={data} onChange={(e) => setData(e.target.value)} />
+          <input type="date" className="op-input" value={data} min="2000-01-01" max="2100-12-31" onChange={(e) => setData(e.target.value)} />
         </Campo>
         <Campo label="Fase" req largo>
           <Combobox
@@ -337,6 +339,18 @@ export default function MovimentacaoPanel({
           Esta saída passa do previsto da fase. Dá pra salvar assim mesmo.
         </p>
       )}
+      {/* Datas estranhas só avisam (rodada 2, A26): nota com data adiantada existe, mas
+          quase sempre é o ano ou o mês errado. */}
+      {data > depoisDe(7) && (
+        <p className="mt-3 flex items-center gap-1.5 text-[#9c6510]">
+          A data {formatData(data)} está no futuro. Confira o dia, o mês e o ano.
+        </p>
+      )}
+      {tipo === 'saida' && pagoEm && data && pagoEm < data && (
+        <p className="mt-3 flex items-center gap-1.5 text-[#9c6510]">
+          O pagamento ({formatData(pagoEm)}) é antes da data da nota ({formatData(data)}).
+        </p>
+      )}
 
       {/* Pagamento é o último bloco: quando pagar só interessa depois de saber o que
           se comprou e quanto deu. Baixar e estornar é marcar e desmarcar este check -
@@ -355,9 +369,9 @@ export default function MovimentacaoPanel({
               />
             </Campo>
 
-            {/* O check tem a linha dele: é a pergunta ("já pagou?"), e data e observação
-                embaixo são a resposta - só aparecem quando a resposta é sim. Sem texto ao
-                lado: o rótulo já diz Pago e o estado está no título do modal. */}
+            {/* O check tem a linha dele: é a pergunta ("já pagou?"), e a data embaixo é a
+                resposta - só aparece quando a resposta é sim. Sem texto ao lado: o rótulo
+                já diz Pago e o estado está no título do modal. */}
             <Campo label="Pago" largo>
               <div className="pt-1.5">
                 <Check checked={!!pagoEm} onChange={(v) => setPagoEm(v ? hoje() : null)} />
@@ -365,25 +379,25 @@ export default function MovimentacaoPanel({
             </Campo>
 
             {pagoEm && (
-              <>
-                {/* Hoje por padrão, mas nota velha se paga com a data dela. */}
-                <Campo label="Data do pgto.">
-                  <input
-                    type="date"
-                    className="op-input"
-                    value={pagoEm}
-                    onChange={(e) => setPagoEm(e.target.value || hoje())}
-                  />
-                </Campo>
-                <Campo label="Observação">
-                  <Input
-                    value={pagoObs}
-                    onChange={(e) => setPagoObs(e.target.value)}
-                    placeholder="pix, cheque 4412..."
-                  />
-                </Campo>
-              </>
+              // Hoje por padrão, mas nota velha se paga com a data dela.
+              <Campo label="Data do pgto.">
+                <input
+                  type="date"
+                  className="op-input"
+                  value={pagoEm}
+                  onChange={(e) => setPagoEm(e.target.value || hoje())}
+                />
+              </Campo>
             )}
+            {/* Paga, é como se pagou; em aberto, o boleto de quem vai pagar (rodada 2, A9).
+                O texto fica ao marcar e desmarcar: é da mesma conta. */}
+            <Campo label={pagoEm ? 'Observação' : 'Boleto'}>
+              <Input
+                value={pagoObs}
+                onChange={(e) => setPagoObs(e.target.value)}
+                placeholder={pagoEm ? 'pix, cheque 4412...' : 'linha digitável, nº do boleto...'}
+              />
+            </Campo>
           </Campos>
         </>
       )}
