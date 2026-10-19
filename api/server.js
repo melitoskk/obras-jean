@@ -121,7 +121,12 @@ const CAMPOS_OBRA = ['nome', 'cliente_id', 'status', 'foto', 'cidade', 'categori
   'dt_inicio', 'dt_fim', 'dt_inicio_real', 'dt_fim_real',
   'cei', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'uf', 'area']
 
+// Datas da obra (rodada 4, A1): a mesma faixa dos lançamentos - "62207" passava e a
+// obra mostrava 722173 meses.
+const DATAS_OBRA = ['dt_inicio', 'dt_fim', 'dt_inicio_real', 'dt_fim_real']
+const dataRuim = (b) => DATAS_OBRA.find((k) => b[k] && !dataValida(b[k]))
 app.post('/api/obras', (req, res) => {
+  if (dataRuim(req.body)) return res.status(400).json({ erro: 'data inválida (dia que exista, ano de 2000 a 2100)' })
   const campos = CAMPOS_OBRA.filter((k) => k in req.body)
   const r = db.prepare(
     `INSERT INTO obra (${[...campos, 'criada_em'].join(',')}) VALUES (${campos.map(() => '?').join(',')},?)`,
@@ -132,6 +137,7 @@ app.post('/api/obras', (req, res) => {
 // Editar obra. Só os campos enviados mudam - assim a home consegue trocar só a
 // foto sem precisar reenviar nome, cliente e status junto.
 app.patch('/api/obras/:id', (req, res) => {
+  if (dataRuim(req.body)) return res.status(400).json({ erro: 'data inválida (dia que exista, ano de 2000 a 2100)' })
   const campos = CAMPOS_OBRA.filter((k) => k in req.body)
   // Concluída só com tudo fechado (Jean, 18/10/2026): toda fase concluída, com a taxa
   // escolhida, e nenhuma conta a pagar. Obra que já estava concluída não é barrada.
@@ -307,8 +313,10 @@ app.use(['/api/entradas', '/api/saidas', '/api/diario'], (req, res, next) => {
   const b = req.body ?? {}
   const nome = { data: 'data', vencimento: 'vencimento', pago_em: 'data do pagamento' }
   for (const k of Object.keys(nome)) {
-    if (b[k] != null && b[k] !== '' && !dataValida(b[k])) return res.status(400).json({ erro: `${nome[k]} inválida` })
+    if (b[k] != null && b[k] !== '' && !dataValida(b[k])) return res.status(400).json({ erro: `${nome[k]} inválida (dia que exista, ano de 2000 a 2100)` })
   }
+  // Diário é do que já aconteceu (rodada 4, A2).
+  if (req.baseUrl === '/api/diario' && b.data && b.data > hoje()) return res.status(400).json({ erro: 'o diário não aceita data depois de hoje' })
   // No diário a data é opcional (vale hoje); lançamento sem data não existe.
   if (req.method === 'POST' && req.baseUrl !== '/api/diario' && !b.data) return res.status(400).json({ erro: 'a data é obrigatória' })
   next()

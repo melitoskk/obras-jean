@@ -46,7 +46,10 @@ export default function Combobox({
 
   // Abrir limpando o filtro (mostra tudo). Precisa rodar no foco E no clique: depois de
   // selecionar com o mouse o input segue focado, e sem isto a lista não reabriria.
-  const abrir = () => { if (!disabled) { setFocused(true); setOpen(true); setQuery('') } }
+  // Sem nada escolhido, o que se digitou fica (rodada 4, A5): a pergunta do preço tirava o
+  // foco no meio da digitação do item seguinte e, na volta, o campo estava vazio. Com algo
+  // escolhido, abrir limpa o filtro pra mostrar a lista toda, como antes.
+  const abrir = () => { if (!disabled) { setFocused(true); setOpen(true); if (selected) setQuery('') } }
   const fechar = () => { setQuery(''); setFocused(false); setOpen(false) }
 
   const choose = (row) => {
@@ -82,14 +85,15 @@ export default function Combobox({
       <input
         autoFocus={autoFocus}
         disabled={disabled}
-        value={focused ? query : (selected?.label ?? '')}
+        // Digitado e não escolhido aparece em cinza: é texto, ainda não é o item.
+        value={focused ? query : (selected?.label ?? query)}
         placeholder={placeholder}
         onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
         onFocus={abrir}
         onClick={abrir}
         onBlur={() => { setFocused(false); setOpen(false) }}
         onKeyDown={onKeyDown}
-        className="op-input pr-12"
+        className={`op-input pr-12 ${!focused && !selected && query ? 'text-[#999] italic' : ''}`}
       />
       {/* `× ⌄` no canto: é assim que o select da referência aparece quando tem valor. */}
       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center gap-0.5 pr-1.5 text-[#888]">

@@ -11,7 +11,7 @@ import Botao, { BarraAcao } from '../ui/Botao'
 import Badge from '../ui/Badge'
 import { Campos, Campo, Secao, Input, Radios } from '../ui/Form'
 import { getFornecedores } from '../lib/api'
-import { norm, formatMoeda, formatData } from '../lib/format'
+import { formatMoeda, formatData, casaBusca } from '../lib/format'
 
 // Módulo de Fornecedores (PROJETO-v3 §7.1) - a mesma forma da lista de Clientes.
 // ponytail: filtro client-side, como as outras duas listas. Vira query no servidor
@@ -50,7 +50,7 @@ export default function Fornecedores() {
     () =>
       fornecedores.filter(
         (c) =>
-          norm(c.nome).includes(norm(f.nome)) &&
+          casaBusca(c.nome, f.nome) &&
           (c.cnpj ?? '').includes(f.doc) &&
           (f.tipo === 'todos' || !!c[TIPOS[f.tipo]]) &&
           (f.condicao === 'ambos' ? true

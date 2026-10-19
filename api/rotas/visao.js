@@ -49,7 +49,8 @@ export function visaoCliente(obraId) {
   // Fotos da pasta Fotos e as do Diário de obra (com a fase do post, quando houver).
   // Documentos e Projetos não entram: é a obra em foto que o cliente quer ver.
   const fotos = db.prepare(`
-    SELECT a.id, a.nome, a.ref, a.criado_em, f.nome AS fase
+    -- A foto do diário leva o dia do registro, não o do envio (rodada 4, A10).
+    SELECT a.id, a.nome, a.ref, COALESCE(d.data, a.criado_em) AS criado_em, f.nome AS fase
     FROM arquivo a LEFT JOIN diario d ON d.id = a.diario_id LEFT JOIN fase f ON f.id = d.fase_id
     WHERE a.obra_id = ? AND a.pasta IN ('fotos', 'dia_a_dia')
     ORDER BY a.criado_em DESC, a.id DESC

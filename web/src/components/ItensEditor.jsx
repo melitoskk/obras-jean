@@ -164,7 +164,14 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
                   />
                 </td>
               )}
-              <td className="px-1 py-0.5"><QtdInput value={l.qtd} onChange={(v) => set(i, { qtd: v })} /></td>
+              {/* A unidade do cadastro ao lado da quantidade (rodada 4, A4): o cimento em
+                  "Quilos" fazia 50 sacos virarem 50 kg sem ninguém ver. */}
+              <td className="px-1 py-0.5">
+                <div className="flex items-center gap-1">
+                  <QtdInput value={l.qtd} onChange={(v) => set(i, { qtd: v })} />
+                  {item?.unidade && <span className="shrink-0 text-[11px] text-[#888]" title="Unidade do cadastro do item">{item.unidade}</span>}
+                </div>
+              </td>
               <td className="px-1 py-0.5">
                 <MoneyInput
                   value={l.valorUnit}

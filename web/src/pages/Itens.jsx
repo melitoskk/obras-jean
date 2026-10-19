@@ -9,7 +9,7 @@ import Botao, { BarraAcao } from '../ui/Botao'
 import Badge from '../ui/Badge'
 import { Campos, Campo, Secao, Input, Select, Radios } from '../ui/Form'
 import { getInsumos } from '../lib/api'
-import { norm, formatData, formatMoeda } from '../lib/format'
+import { formatData, formatMoeda, casaBusca } from '../lib/format'
 
 // Módulo de Itens (21/08/2026) - a mesma forma da lista de Fornecedores, com menos
 // campos. É a tabela `insumo`: o item da linha da saída e o insumo da composição do
@@ -41,7 +41,7 @@ export default function Itens() {
     () =>
       itens.filter(
         (i) =>
-          norm(i.nome).includes(norm(f.nome)) &&
+          casaBusca(i.nome, f.nome) &&
           (!f.tipo || i.tipo_custo === f.tipo) &&
           (f.condicao === 'incompletos' ? !!i.incompleto
             : f.condicao === 'sem_fornecedor' ? !i.fornecedores

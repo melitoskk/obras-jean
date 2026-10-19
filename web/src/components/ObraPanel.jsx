@@ -55,6 +55,8 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
   // `?aba=fases`: a obra recém-criada abre direto onde se monta (rodada 1, A14).
   const [aba, setAba] = useState(() => {
     const pedida = new URLSearchParams(window.location.search).get('aba')
+    // Lida a aba, a query sai: trocar de aba não pode deixar `?aba=fases` no endereço (rodada 4, A14).
+    if (pedida) window.history.replaceState(null, '', window.location.pathname + window.location.hash)
     if (pedida === 'fases' && pode('estimativa')) return 'fases'
     return cadastra ? 'dados' : 'diario'
   })
@@ -165,7 +167,9 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
       // A obra nova volta com o id: quem chamou leva pra ela, na aba Fases.
       onSalvo?.(nova?.id)
     } catch (e) {
-      // `e.erro` é a frase do servidor: "Para concluir a obra, falta…".
+      // `e.erro` é a frase do servidor: "Para concluir a obra, falta…". A situação volta
+      // à gravada: o combo dizendo "Concluída" depois da recusa mentia (rodada 4, A9).
+      if (obra?.status && d.status !== obra.status) set('status', obra.status)
       setFaixa({ tipo: 'erro', texto: e.erro ?? 'Não foi possível salvar.' })
     } finally {
       setSalvando(false)

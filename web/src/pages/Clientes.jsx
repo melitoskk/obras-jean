@@ -12,7 +12,7 @@ import Botao, { BarraAcao } from '../ui/Botao'
 import Badge from '../ui/Badge'
 import { Campos, Campo, Secao, Input, Select, Radios } from '../ui/Form'
 import { getClientes } from '../lib/api'
-import { norm } from '../lib/format'
+import { norm, casaBusca } from '../lib/format'
 
 // Módulo de Clientes, no molde de Obra-Prima-Tutorial-min.png: painel de pesquisa à
 // esquerda, grid de resultados à direita.
@@ -41,7 +41,7 @@ export default function Clientes() {
     () =>
       clientes.filter(
         (c) =>
-          norm(c.nome).includes(norm(f.nome)) &&
+          casaBusca(c.nome, f.nome) &&
           (c.cpf_cnpj ?? '').includes(f.doc) &&
           norm(c.cidade).includes(norm(f.cidade)) &&
           (!f.uf || c.uf === f.uf) &&

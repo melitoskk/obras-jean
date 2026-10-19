@@ -10,7 +10,7 @@ import Badge from '../ui/Badge'
 import Barra from '../ui/Barra'
 import { Campos, Campo, Secao, Input, Select } from '../ui/Form'
 import { getObras, getClientes } from '../lib/api'
-import { formatMoeda, norm, pct } from '../lib/format'
+import { formatMoeda, pct, casaBusca } from '../lib/format'
 import { usePode } from '../lib/sessao'
 
 // Mesmo molde do módulo de Clientes.
@@ -54,8 +54,8 @@ export default function Obras() {
     () =>
       obras.filter(
         (o) =>
-          norm(o.nome).includes(norm(f.nome)) &&
-          norm(o.cliente).includes(norm(f.cliente)) &&
+          casaBusca(o.nome, f.nome) &&
+          casaBusca(o.cliente, f.cliente) &&
           (f.situacao === 'todas' || o.status === f.situacao),
       ),
     [obras, f],
