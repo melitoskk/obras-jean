@@ -25,7 +25,8 @@ const obraDe = (req) => Number(req.query.obra) || null
 // parte já saiu do caixa. Lançado, pago e em aberto saem os três da mesma linha.
 export const DIMENSOES = ['fase', 'servico', 'insumo', 'credor', 'tipo']
 
-export function pagamentos({ por = 'fase', obra = null, fase = null, de = null, ate = null } = {}) {
+// `obras` (Set) recorta pra quem não vê todas as obras (rodada 4, A15); null = todas.
+export function pagamentos({ por = 'fase', obra = null, fase = null, de = null, ate = null, obras = null } = {}) {
   // `fase` filtra pelo NOME (rodada 1, A9): com todas as obras, é a fundação de cada uma.
   const saidas = db.prepare(`
     SELECT s.id, s.numero, s.data, s.descricao, s.valor, s.pago_em,
@@ -36,7 +37,7 @@ export function pagamentos({ por = 'fase', obra = null, fase = null, de = null, 
     WHERE (:obra IS NULL OR o.id = :obra) AND (:fase IS NULL OR f.nome = :fase)
       AND (:de IS NULL OR s.data >= :de) AND (:ate IS NULL OR s.data <= :ate)
     ORDER BY s.data, s.criado_em, s.id
-  `).all({ obra, fase, de, ate })
+  `).all({ obra, fase, de, ate }).filter((s) => !obras || obras.has(s.obra_id))
 
   // A fase e o serviço agrupam pelo NOME, sem código: com "todas as obras" a fundação
   // de cada obra é uma fase diferente, e a pergunta é quanto foi pra fundação. O código
@@ -107,7 +108,10 @@ r.get('/api/relatorios/contas-a-pagar', (req, res) => {
 
 r.get('/api/relatorios/pagamentos', (req, res) => {
   const por = DIMENSOES.includes(req.query.por) ? req.query.por : 'fase'
-  res.json(pagamentos({ por, obra: obraDe(req), fase: req.query.fase || null, de: dataDe(req.query.de), ate: dataDe(req.query.ate) }))
+  res.json(pagamentos({
+    por, obra: obraDe(req), fase: req.query.fase || null, de: dataDe(req.query.de), ate: dataDe(req.query.ate),
+    obras: obrasVisiveis(req),
+  }))
 })
 
 // Taxa de administração devida pela fase (decidido com o Jean em 17/10/2026): só

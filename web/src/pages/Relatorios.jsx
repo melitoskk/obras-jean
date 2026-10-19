@@ -470,7 +470,8 @@ function ExtratoDaFase({ filtro, setFiltro, opcoesObra }) {
     return novo
   }, { replace: true })
 
-  const opcoesFase = (dados?.fases ?? []).map((f) => ({ valor: String(f.id), label: `${f.codigo ?? ''} - ${f.nome}` }))
+  // Concluída marcada na lista (rodada 4, A22): é o extrato que vai pro cliente no fim da fase.
+  const opcoesFase = (dados?.fases ?? []).map((f) => ({ valor: String(f.id), label: `${f.codigo ?? ''} - ${f.nome}${f.concluida_em ? ' (concluída)' : ''}` }))
   const ls = dados?.lancamentos ?? []
   const soma = (tipo) => ls.filter((l) => l.tipo === tipo).reduce((a, l) => a + l.valor, 0)
   const entradas = soma('entrada')

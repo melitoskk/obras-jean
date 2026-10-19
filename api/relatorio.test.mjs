@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os'
 const dir = mkdtempSync(join(tmpdir(), 'obras-'))
 process.env.OBRAS_DB = join(dir, 'teste.db')
 const { default: db, novoOrcamento } = await import('./db.js')
+const { extratoDoCredor } = await import('./rotas/fornecedor.js')
 const { pagamentos, estimadoRealizado, extratoFase, DIMENSOES, aReceberPrevisto, pendenteParaConcluir, contasAPagar } = await import('./rotas/relatorio.js')
 
 const ins = (sql, ...v) => Number(db.prepare(sql).run(...v).lastInsertRowid)
@@ -79,6 +80,9 @@ assert.deepEqual(pagamentos({ por: 'tipo', fase: 'NÃO EXISTE' }), [])
 assert.equal(pagamentos({ por: 'fase', obra }).find((l) => l.valor === 5_000_00).fornecedor, 'José')
 db.prepare("UPDATE saida SET tipo_custo = NULL WHERE valor = 70000").run()
 db.prepare('UPDATE fornecedor SET presta_servico = 0 WHERE id = ?').run(jose)
+// Recorte de quem não vê todas as obras (rodada 4, A15): "todas" é todas as DELE.
+assert.equal(soma(pagamentos({ por: 'fase', obras: new Set([outra]) })), 2_000_00)
+assert.deepEqual(extratoDoCredor(jose, null, new Set([outra])).map((l) => l.valor), [2_000_00])
 // Fase agrupa por nome: a fundação das duas obras é uma linha só.
 assert.equal(Object.keys(porGrupo(pagamentos({ por: 'fase' }))).length, 1)
 // Pago × em aberto vem da nota: a empreita do José na Casa está em aberto.

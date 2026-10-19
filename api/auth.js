@@ -254,7 +254,8 @@ export const podeObra = (req, obraId) => {
 // De que obra é o pedido - pra quem não tem `todas_obras` (19/10/2026: com permissões
 // montadas, alguém pode ver valores sem ver todas as obras, e as rotas de dinheiro nunca
 // tinham precisado conferir obra). Devolve o id, null quando o pedido não é de uma obra
-// só, ou 'todas' quando é de várias (relatório sem filtro, extrato do credor).
+// só, ou 'todas' quando é de várias (relatório sem filtro, extrato do credor) - essas
+// passam e recortam elas mesmas pelas obras da pessoa (rodada 4, A15: o 403 virava R$ 0,00).
 const obraDaFaseQ = db.prepare('SELECT obra_id FROM fase WHERE id = ?')
 const obraDoOrc = db.prepare('SELECT obra_id FROM orcamento WHERE id = ?')
 const obraDaSaidaQ = db.prepare('SELECT f.obra_id FROM saida s JOIN fase f ON f.id = s.fase_id WHERE s.id = ?')
@@ -278,8 +279,7 @@ export function exigirObra(req, res, next) {
   const visiveis = obrasVisiveis(req)
   if (!visiveis) return next()
   const obra = obraDoPedido(req)
-  if (obra === 'todas') return res.status(403).json({ erro: 'escolha uma obra' })
-  if (obra != null && !visiveis.has(obra)) return res.status(404).json({ erro: 'obra não encontrada' })
+  if (obra != null && obra !== 'todas' && !visiveis.has(obra)) return res.status(404).json({ erro: 'obra não encontrada' })
   next()
 }
 

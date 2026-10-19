@@ -154,7 +154,7 @@ const passa = (req) => { let ok = false; const r = resposta(); exigirObra(req, r
 const leitor = { permissoes: new Set(['ver_valores']), usuarioId: ana } // vê valores, só a Casa
 assert.equal(passa({ ...leitor, path: `/api/obra/${casa}/fluxo` }), true)
 assert.equal(passa({ ...leitor, path: `/api/obra/${predio}/fluxo` }), 404)
-assert.equal(passa({ ...leitor, path: '/api/relatorios/pagamentos', query: {} }), 403)
+assert.equal(passa({ ...leitor, path: '/api/relatorios/pagamentos', query: {} }), true, 'passa: a rota recorta pelas obras dele (rodada 4, A15)')
 assert.equal(passa({ ...escr, path: '/api/relatorios/pagamentos', query: {} }), true)
 
 // 6. Sem ninguém ativo que cadastre usuários o sistema trava - a rota desfaz quando isso acontece.

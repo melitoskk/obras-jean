@@ -1,6 +1,7 @@
 import express from 'express'
 import db from '../db.js'
 import { enviarCsv, reais } from '../csv.js'
+import { obrasVisiveis } from '../auth.js'
 
 // Extrato do credor (UPDATE.md §10.2): tudo que foi lançado pra um fornecedor, em todas
 // as obras. É o documento que se manda pro credor conferir - por isso leva número do
@@ -11,7 +12,8 @@ const r = express.Router()
 
 // `obraId` opcional: o extrato que se manda costuma ser de UMA obra.
 // `itens` são as linhas da nota que são dele - com fornecedor no cabeçalho, todas.
-export function extratoDoCredor(fornecedorId, obraId = null) {
+// `obras` (Set) recorta pra quem não vê todas as obras (rodada 4, A15); null = todas.
+export function extratoDoCredor(fornecedorId, obraId = null, obras = null) {
   const linhas = db.prepare(`
     SELECT s.id, s.numero, s.data, s.criado_em, s.descricao, s.vencimento, s.pago_em, s.pago_obs,
       s.anexo, s.fornecedor_id AS cabecalho, sc.valor,
@@ -28,7 +30,7 @@ export function extratoDoCredor(fornecedorId, obraId = null) {
   const itens = db.prepare(
     'SELECT descricao FROM saida_item WHERE saida_id = ? AND (? IS NOT NULL OR fornecedor_id = ?) ORDER BY id',
   )
-  return linhas.map(({ cabecalho, ...l }) => ({
+  return linhas.filter((l) => !obras || obras.has(l.obra_id)).map(({ cabecalho, ...l }) => ({
     ...l,
     itens: itens.all(l.id, cabecalho, fornecedorId).map((i) => i.descricao).filter(Boolean),
   }))
@@ -38,13 +40,13 @@ export function extratoDoCredor(fornecedorId, obraId = null) {
 const obraDe = (req) => Number(req.query.obra) || null
 
 r.get('/api/fornecedores/:id/extrato', (req, res) => {
-  res.json(extratoDoCredor(Number(req.params.id), obraDe(req)))
+  res.json(extratoDoCredor(Number(req.params.id), obraDe(req), obrasVisiveis(req)))
 })
 
 r.get('/api/fornecedores/:id/extrato.csv', (req, res) => {
   const forn = db.prepare('SELECT nome FROM fornecedor WHERE id = ?').get(Number(req.params.id))
   if (!forn) return res.status(404).json({ erro: 'fornecedor não encontrado' })
-  const linhas = extratoDoCredor(Number(req.params.id), obraDe(req))
+  const linhas = extratoDoCredor(Number(req.params.id), obraDe(req), obrasVisiveis(req))
   const soma = (ls) => ls.reduce((s, l) => s + l.valor, 0)
   const pago = soma(linhas.filter((l) => l.pago_em))
   // Comprovante vai como nome do arquivo: o CSV não abre anexo, mas diz qual pedir.

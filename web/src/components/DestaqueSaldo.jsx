@@ -38,7 +38,15 @@ export default function DestaqueSaldo({ obraId, saldo = 0, caixa = 0, aPagar = 0
         <div className="flex min-w-[140px] flex-col justify-center border border-grade-linha bg-[#f4f8fc] px-3 py-1.5">
           <span className="text-rotulo">A receber (previsto)</span>
           <b className="text-[17px] leading-tight tabular-nums text-titulo">R$ {formatMoeda(aReceber)}</b>
-          <span className="text-[11px] text-[#888]">custo previsto + taxa − recebido</span>
+          {/* A conta por extenso no title (rodada 4, A17): no %, a fase concluída conta a taxa
+              sobre tudo o que lançou - o que está em aberto vai ser pago -, e por isso o
+              número difere da "Taxa devida", que é sobre o pago. */}
+          <span
+            className="text-[11px] text-[#888]"
+            title="Por fase: aberta = o maior entre orçado e gasto, mais o % da estimativa; concluída = o que gastou, mais a taxa escolhida (no %, sobre tudo o que lançou, porque o que está em aberto vai ser pago). Menos o que o cliente já pagou."
+          >
+            custo previsto + taxa − recebido ⓘ
+          </span>
         </div>
       )}
     </div>

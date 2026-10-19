@@ -587,15 +587,22 @@ app.delete('/api/arquivos/:id', (req, res) => {
 // `compras`, `ultima` e `total` saem do histórico, nunca de cadastro - é o que dá
 // utilidade a esta lista. Vêm da view `saida_credor` (db.js), a mesma do extrato do
 // credor: o Total daqui é o "Total lançado" de lá.
+// O histórico conta só as obras que a pessoa vê, e o total em R$ só sai pra quem vê
+// valores (rodada 4): com permissões montadas, quem cadastra sem ver dinheiro, ou vê uma
+// obra só, não pode ler aqui o quanto se gastou nas outras.
 app.get('/api/fornecedores', (req, res) => {
-  res.json(db.prepare(`
+  const visiveis = obrasVisiveis(req)
+  const lista = db.prepare(`
     SELECT f.*, IFNULL(h.compras, 0) AS compras, h.ultima, IFNULL(h.total, 0) AS total
     FROM fornecedor f LEFT JOIN (
       SELECT sc.fornecedor_id, COUNT(*) AS compras, MAX(s.data) AS ultima, SUM(sc.valor) AS total
-      FROM saida_credor sc JOIN saida s ON s.id = sc.saida_id GROUP BY sc.fornecedor_id
+      FROM saida_credor sc JOIN saida s ON s.id = sc.saida_id JOIN fase fa ON fa.id = s.fase_id
+      WHERE ? IS NULL OR fa.obra_id IN (SELECT value FROM json_each(?))
+      GROUP BY sc.fornecedor_id
     ) h ON h.fornecedor_id = f.id
     ORDER BY f.nome
-  `).all())
+  `).all(visiveis && 1, visiveis && JSON.stringify([...visiveis]))
+  res.json(pode(req, 'ver_valores') ? lista : lista.map(({ total: _, ...f }) => f))
 })
 app.post('/api/fornecedores', (req, res) => {
   const r = db.prepare('INSERT INTO fornecedor (nome, incompleto) VALUES (?, 1)').run(req.body.nome)
@@ -606,7 +613,16 @@ app.post('/api/fornecedores', (req, res) => {
 const CAMPOS_FORNECEDOR = ['nome', 'cnpj', 'ie', 'contato', 'telefone', 'celular', 'email',
   'observacao', 'ativo', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf',
   'whatsapp_celular', 'fornece_material', 'presta_servico']
+// CNPJ repetido (rodada 4, A18): o mesmo CNPJ em dois cadastros parte o histórico do
+// fornecedor em dois. Compara só os dígitos; vazio não conta.
+const digitos = (v) => String(v ?? '').replace(/\D/g, '')
 app.patch('/api/fornecedores/:id', (req, res) => {
+  const cnpj = digitos(req.body.cnpj)
+  if (cnpj) {
+    const outro = db.prepare('SELECT id, nome, cnpj FROM fornecedor WHERE id <> ? AND cnpj IS NOT NULL').all(Number(req.params.id))
+      .find((f) => digitos(f.cnpj) === cnpj)
+    if (outro) return res.status(409).json({ erro: `já existe fornecedor com este CNPJ: ${outro.nome}` })
+  }
   const campos = CAMPOS_FORNECEDOR.filter((k) => k in req.body)
   // Completar qualquer campo tira o fornecedor da fila de pendências.
   // Inativar/ativar manda só `ativo` e não completa nada (rodada 3, A2).

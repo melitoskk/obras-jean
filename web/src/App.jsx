@@ -117,7 +117,8 @@ export default function App() {
   return (
     <Sessao.Provider value={sessao}>
       <BrowserRouter>
-        <Moldura {...sessao} onSair={() => logout().then(() => setSessao(null))} />
+        {/* Sair volta pro começo: quem entra depois não pode cair na tela do anterior (rodada 4, A21). */}
+        <Moldura {...sessao} onSair={() => logout().then(() => { window.history.replaceState(null, '', '/'); setSessao(null) })} />
       </BrowserRouter>
     </Sessao.Provider>
   )

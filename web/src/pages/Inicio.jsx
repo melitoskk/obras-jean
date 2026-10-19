@@ -42,7 +42,8 @@ export default function Inicio() {
         </Atalho>
         {/* Contas a pagar de todas as obras (rodada 2, A5): o vencido primeiro, em vermelho. */}
         <Atalho icone={Receipt} titulo="Contas a pagar" onClick={() => navegar('/relatorios?r=apagar')}>
-          <b className="text-[22px] text-laranja">R$ {formatMoeda(somaDe(contas))}</b> em {contas.length} conta(s)
+          <b className="text-[22px] text-laranja">R$ {formatMoeda(somaDe(contas))}</b> em {contas.length} conta(s),
+          de todas as obras (também as paralisadas)
           <div className={`mt-1 ${vencidas.length ? 'font-semibold text-perigo' : 'text-[#777]'}`}>
             {vencidas.length ? `${vencidas.length} vencida(s): R$ ${formatMoeda(somaDe(vencidas))}` : 'nenhuma vencida'}
           </div>

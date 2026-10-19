@@ -70,8 +70,9 @@ export default function FornecedorPanel({ fornecedor, onFechar, onSalvo }) {
     try {
       await patchFornecedor(d.id, { ativo })
       onSalvo?.(d.id)
-    } catch {
-      setFaixa({ tipo: 'erro', texto: 'Não foi possível salvar.' })
+    } catch (e) {
+      // `e.erro` é a frase do servidor ("já existe fornecedor com este CNPJ: ...").
+      setFaixa({ tipo: 'erro', texto: e.erro ? `Não foi possível salvar: ${e.erro}.` : 'Não foi possível salvar.' })
     }
   }
 
