@@ -146,6 +146,9 @@ assert.equal(obraDoPedido({ path: '/api/relatorios/pagamentos' }), 'todas')
 assert.equal(obraDoPedido({ path: '/api/relatorios/contas-a-pagar' }), null, 'esta recorta sozinha')
 assert.equal(obraDoPedido({ path: '/api/fornecedores/3/extrato' }), 'todas')
 assert.equal(obraDoPedido({ path: '/api/insumos' }), null)
+const pend = id(db.prepare("INSERT INTO pendencia (obra_id, texto, criado_em) VALUES (?, 'impermeabilizante', '2026-10-19')").run(predio))
+assert.equal(obraDoPedido({ path: `/api/pendencias/${pend}` }), predio, 'pendência de outra obra também é barrada')
+assert.ok(autorizado(CAMPO, 'POST', '/api/pendencias') && !autorizado(new Set(['ver_valores']), 'POST', '/api/pendencias'))
 const resposta = () => { const r = { status: (c) => { r.code = c; return r }, json: () => r }; return r }
 const passa = (req) => { let ok = false; const r = resposta(); exigirObra(req, r, () => { ok = true }); return ok || r.code }
 const leitor = { permissoes: new Set(['ver_valores']), usuarioId: ana } // vê valores, só a Casa

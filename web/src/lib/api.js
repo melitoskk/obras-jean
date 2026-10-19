@@ -87,6 +87,10 @@ export const excluirSaida = (id) => req('DELETE', `/api/saidas/${id}`)
 export const criarDiario = (d) => req('POST', '/api/diario', d)
 export const patchDiario = (id, d) => req('PATCH', `/api/diario/${id}`, d)
 export const excluirDiario = (id) => req('DELETE', `/api/diario/${id}`)
+// Pendências (rodada 1, A11). PATCH com `{ feita }` marca e desmarca.
+export const criarPendencia = (p) => req('POST', '/api/pendencias', p)
+export const patchPendencia = (id, p) => req('PATCH', `/api/pendencias/${id}`, p)
+export const excluirPendencia = (id) => req('DELETE', `/api/pendencias/${id}`)
 
 export const criarArquivo = (a) => req('POST', '/api/arquivos', a)
 export const excluirArquivo = (id) => req('DELETE', `/api/arquivos/${id}`)

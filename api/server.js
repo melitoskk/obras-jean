@@ -230,12 +230,17 @@ app.get('/api/obra/:id', (req, res) => {
     'SELECT id, pasta, nome, ref, criado_em, diario_id, autor_id FROM arquivo WHERE obra_id = ? ORDER BY id DESC',
   ).all(id).filter((a) => podePasta(req, a.pasta))
     .map(({ autor_id, ...a }) => ({ ...a, editavel: podeEditarArquivo(req, { autor_id }) }))
+  // Pendências (rodada 1, A11): abertas primeiro, pelo prazo; feitas depois, da mais recente.
+  const pendencias = db.prepare(`
+    SELECT id, fase_id, texto, responsavel, prazo, feita_em, autor_id, criado_em FROM pendencia WHERE obra_id = ?
+    ORDER BY feita_em IS NOT NULL, CASE WHEN feita_em IS NULL THEN prazo IS NULL END, prazo, feita_em DESC, id
+  `).all(id).map(({ autor_id, ...p }) => ({ ...p, editavel: podeEditarPost(req, { autor_id }) }))
   // Sem `ver_valores` sai o que o diário e a galeria usam - lançamento, insumo e
   // fornecedor são valor e custo, e não saem do servidor.
   if (!pode(req, 'ver_valores')) {
-    return res.json({ obra, cliente, clientes: [], fases, saidas: [], entradas: [], itens: [], fornecedores: [], diario, arquivos })
+    return res.json({ obra, cliente, clientes: [], fases, saidas: [], entradas: [], itens: [], fornecedores: [], diario, arquivos, pendencias })
   }
-  res.json({ obra, cliente, clientes, fases, saidas, entradas, itens, fornecedores, diario, arquivos })
+  res.json({ obra, cliente, clientes, fases, saidas, entradas, itens, fornecedores, diario, arquivos, pendencias })
 })
 
 // --- Exportar CSV: o livro-caixa da obra (entradas + saídas) num arquivo só.
@@ -489,6 +494,44 @@ app.delete('/api/diario/:id', (req, res) => {
   if (post && !podeObra(req, post.obra_id)) return res.status(404).json({ erro: 'registro não encontrado' })
   if (post && !podeEditarPost(req, post)) return res.status(403).json({ erro: 'só quem escreveu exclui o registro' })
   db.prepare('DELETE FROM diario WHERE id = ?').run(Number(req.params.id))
+  res.json({ ok: true })
+})
+
+// --- Pendências (rodada 1, A11) ---
+// Quem lança diário cria, edita e marca feita - é a lista de quem está na obra. Excluir é
+// de quem criou, ou de quem mexe no que é dos outros (a mesma regra do diário).
+const camposPendencia = (b) => ({
+  texto: b.texto?.trim(), fase_id: b.fase_id ?? null,
+  responsavel: b.responsavel?.trim() || null, prazo: b.prazo || null,
+})
+app.post('/api/pendencias', (req, res) => {
+  const c = camposPendencia(req.body)
+  if (!c.texto) return res.status(400).json({ erro: 'o texto é obrigatório' })
+  if (c.prazo && !dataValida(c.prazo)) return res.status(400).json({ erro: 'prazo inválido' })
+  if (!podeObra(req, req.body.obra_id)) return res.status(404).json({ erro: 'obra não encontrada' })
+  const r = db.prepare('INSERT INTO pendencia (obra_id, fase_id, texto, responsavel, prazo, autor_id, criado_em) VALUES (?,?,?,?,?,?,?)')
+    .run(Number(req.body.obra_id), c.fase_id, c.texto, c.responsavel, c.prazo, req.usuarioId, agora())
+  res.json({ id: Number(r.lastInsertRowid) })
+})
+// PATCH parcial: marcar feita manda só `feita` (true/false); editar manda os campos.
+app.patch('/api/pendencias/:id', (req, res) => {
+  const id = Number(req.params.id)
+  if (!db.prepare('SELECT 1 FROM pendencia WHERE id = ?').get(id)) return res.status(404).json({ erro: 'pendência não encontrada' })
+  const b = req.body
+  if ('feita' in b) db.prepare('UPDATE pendencia SET feita_em = ? WHERE id = ?').run(b.feita ? hoje() : null, id)
+  if ('texto' in b) {
+    const c = camposPendencia(b)
+    if (!c.texto) return res.status(400).json({ erro: 'o texto é obrigatório' })
+    if (c.prazo && !dataValida(c.prazo)) return res.status(400).json({ erro: 'prazo inválido' })
+    db.prepare('UPDATE pendencia SET texto = ?, fase_id = ?, responsavel = ?, prazo = ? WHERE id = ?')
+      .run(c.texto, c.fase_id, c.responsavel, c.prazo, id)
+  }
+  res.json({ ok: true })
+})
+app.delete('/api/pendencias/:id', (req, res) => {
+  const p = db.prepare('SELECT autor_id FROM pendencia WHERE id = ?').get(Number(req.params.id))
+  if (p && !podeEditarPost(req, p)) return res.status(403).json({ erro: 'só quem criou exclui' })
+  db.prepare('DELETE FROM pendencia WHERE id = ?').run(Number(req.params.id))
   res.json({ ok: true })
 })
 

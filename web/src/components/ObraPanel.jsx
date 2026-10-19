@@ -9,6 +9,7 @@ import { FotoDrop } from '../ui/FileDrop'
 import { Campos, Campo, Secao, Input, Select, Texto } from '../ui/Form'
 import AbaEndereco from './AbaEndereco'
 import DiarioObra from './DiarioObra'
+import PendenciasObra from './PendenciasObra'
 import DestaqueSaldo from './DestaqueSaldo'
 import FluxoObra from './FluxoObra'
 import GaleriaObra from './GaleriaObra'
@@ -68,7 +69,9 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
     () => (d.id ? getObra(d.id).then(setConteudo).catch(() => {}) : undefined),
     [d.id],
   )
-  useEffect(() => { if (aba === 'diario' || aba === 'galeria') recarregar() }, [aba, recarregar])
+  useEffect(() => { if (['diario', 'galeria', 'pendencias'].includes(aba)) recarregar() }, [aba, recarregar])
+  // As abertas no rótulo da aba: é o que falta fazer, à vista de quem abre a obra.
+  const abertas = (conteudo?.pendencias ?? []).filter((p) => !p.feita_em).length
 
   // Fases da obra: vêm do orçamento ativo dela. `orc` undefined = ainda buscando,
   // null = a obra não tem orçamento nenhum (e aí o botão cria um).
@@ -188,6 +191,7 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
         ] : []),
         // Só existem depois que a obra existe - não dá pra anexar foto ao nada.
         { id: 'diario', label: 'Diário de obra', disabled: !d.id },
+        { id: 'pendencias', label: `Pendências${abertas ? ` (${abertas})` : ''}`, disabled: !d.id },
         { id: 'galeria', label: 'Galeria', disabled: !d.id },
       ]}
       // Do `obra` e não do rascunho `d`: é o número do banco, recarregado a cada
@@ -199,7 +203,7 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
       // botões "Salvar" na mesma tela é o que fez o primeiro teste falhar: clica-se no
       // do rodapé, que gravava só nome e endereço, e a seleção ia pro lixo.
       acoes={
-        !cadastra || ['fases', 'orcamento', 'fluxo', 'cliente', 'diario', 'galeria'].includes(aba) ? null : (
+        !cadastra || ['fases', 'orcamento', 'fluxo', 'cliente', 'diario', 'pendencias', 'galeria'].includes(aba) ? null : (
           <BarraAcao>
             <Botao variante="acento" icone={Save} onClick={salvar} disabled={salvando}>Salvar</Botao>
           </BarraAcao>
@@ -382,6 +386,15 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
         <DiarioObra
           obraId={d.id}
           posts={conteudo?.diario ?? []}
+          fases={conteudo?.fases ?? []}
+          onMudou={recarregar}
+        />
+      )}
+
+      {aba === 'pendencias' && (
+        <PendenciasObra
+          obraId={d.id}
+          pendencias={conteudo?.pendencias ?? []}
           fases={conteudo?.fases ?? []}
           onMudou={recarregar}
         />

@@ -210,6 +210,7 @@ const ROTAS = [
   [/^GET \/api\/anexo\/[^/]+$/, null], // podeAnexo decide
   [/^POST \/api\/anexos$/, ['lancar', 'diario', 'documentos', 'cadastros']],
   [/^(POST|PATCH|DELETE) \/api\/diario(\/\d+)?$/, 'diario'],
+  [/^(POST|PATCH|DELETE) \/api\/pendencias(\/\d+)?$/, 'diario'],
   [/^(POST|DELETE) \/api\/arquivos(\/\d+)?$/, ['diario', 'documentos', 'cadastros']], // a rota vê a pasta
   [/^GET \/api\/clientes\/\d+\/arquivos$/, 'cadastros'],
   [/^GET \/api\/fornecedores\/\d+\/extrato(\.csv)?$/, 'ver_valores'],
@@ -258,6 +259,7 @@ const obraDaFaseQ = db.prepare('SELECT obra_id FROM fase WHERE id = ?')
 const obraDoOrc = db.prepare('SELECT obra_id FROM orcamento WHERE id = ?')
 const obraDaSaidaQ = db.prepare('SELECT f.obra_id FROM saida s JOIN fase f ON f.id = s.fase_id WHERE s.id = ?')
 const obraDaEntrada = db.prepare('SELECT obra_id FROM entrada WHERE id = ?')
+const obraDaPendencia = db.prepare('SELECT obra_id FROM pendencia WHERE id = ?')
 export function obraDoPedido({ path, query = {}, body = {} }) {
   let m
   if ((m = path.match(/^\/api\/obras?\/(\d+)/))) return Number(m[1])
@@ -266,6 +268,7 @@ export function obraDoPedido({ path, query = {}, body = {} }) {
   if ((m = path.match(/^\/api\/fases\/(\d+)/))) return obraDaFaseQ.get(Number(m[1]))?.obra_id ?? null
   if ((m = path.match(/^\/api\/saidas\/(\d+)/))) return obraDaSaidaQ.get(Number(m[1]))?.obra_id ?? null
   if ((m = path.match(/^\/api\/entradas\/(\d+)/))) return obraDaEntrada.get(Number(m[1]))?.obra_id ?? null
+  if ((m = path.match(/^\/api\/pendencias\/(\d+)/))) return obraDaPendencia.get(Number(m[1]))?.obra_id ?? null
   if (body?.obra_id) return Number(body.obra_id)
   if (body?.fase_id && /^\/api\/(saidas|entradas)$/.test(path)) return obraDaFaseQ.get(Number(body.fase_id))?.obra_id ?? null
   if (/^\/api\/relatorios\/(?!contas-a-pagar)/.test(path) || /^\/api\/fornecedores\/\d+\/extrato/.test(path)) return 'todas'

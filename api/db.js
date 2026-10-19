@@ -442,6 +442,18 @@ if (!db.prepare('PRAGMA table_info(saida)').all().some((c) => c.name === 'tipo_c
   db.exec("ALTER TABLE saida ADD COLUMN tipo_custo TEXT CHECK (tipo_custo IN ('materiais', 'mao_de_obra'))")
 }
 
+// Pendências da obra (rodada 1, A11): o que falta fazer ("comprar impermeabilizante
+// antes de subir a alvenaria"), com fase, responsável e prazo. Feita = `feita_em`.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pendencia (
+    id INTEGER PRIMARY KEY,
+    obra_id INTEGER NOT NULL REFERENCES obra(id) ON DELETE CASCADE,
+    fase_id INTEGER REFERENCES fase(id) ON DELETE SET NULL,
+    texto TEXT NOT NULL, responsavel TEXT, prazo TEXT, feita_em TEXT,
+    autor_id INTEGER, criado_em TEXT NOT NULL
+  )
+`)
+
 // Número do lançamento (UPDATE.md §9). POR OBRA, entrada e saída na mesma sequência
 // (Jean, 19/10/2026): uma pasta física de comprovantes por obra, e o Nº 2 é o 2º papel
 // dela. Substituiu o `E-000231` / `S-000412` global por tipo (03/10/2026).
