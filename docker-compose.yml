@@ -41,8 +41,13 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     restart: unless-stopped
+    # Só local: de fora entra pelo nginx do fluxxo (https://oak.fluxxo.app.br), que
+    # alcança o container pela rede fluxxo_fluxxo.
     ports:
-      - "6100:7100"
+      - "127.0.0.1:6100:7100"
+    networks:
+      - default
+      - fluxxo
     # Opcional: sem ele, um aleatório é gerado e guardado em /data/segredo.
     environment:
       - OBRAS_SEGREDO
@@ -51,3 +56,9 @@ services:
 
 volumes:
   obras-data:
+
+networks:
+  # Rede do compose do fluxxo (/root/apps/fluxxo), onde roda o nginx. Só o prod usa.
+  fluxxo:
+    name: fluxxo_fluxxo
+    external: true
