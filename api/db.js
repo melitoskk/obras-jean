@@ -430,7 +430,7 @@ if (!db.prepare('PRAGMA table_info(diario)').all().some((c) => c.name === 'data'
   db.exec('ALTER TABLE diario ADD COLUMN data TEXT')
   db.exec('UPDATE diario SET data = substr(criado_em, 1, 10)')
 }
-// Quem insere sem `data` (semear.js, testes, versão velha da tela) fica com o dia do registro.
+// Quem insere sem `data` (versão velha da tela) fica com o dia do registro.
 db.exec(`
   CREATE TRIGGER IF NOT EXISTS diario_data AFTER INSERT ON diario WHEN NEW.data IS NULL
   BEGIN UPDATE diario SET data = substr(NEW.criado_em, 1, 10) WHERE id = NEW.id; END;
@@ -467,7 +467,7 @@ if (!db.prepare('PRAGMA table_info(obra)').all().some((c) => c.name === 'area'))
 // Não é o `id`: SQLite sem AUTOINCREMENT reaproveita o maior id quando a última linha
 // é excluída, e número citado ("confere o Nº 12") não pode voltar a existir com outra
 // nota. O contador mora em `sequencia` (`obra:<id>`) e só anda pra frente. Quem numera é
-// TRIGGER, não a rota: todo INSERT (servidor, semear.js, testes) sai numerado sem saber.
+// TRIGGER, não a rota: todo INSERT sai numerado sem saber.
 // A obra da saída vem da fase - por isso a saída não troca de obra (server.js).
 db.exec(`
   CREATE TABLE IF NOT EXISTS sequencia (
@@ -475,10 +475,10 @@ db.exec(`
   ) WITHOUT ROWID;
 `)
 
-// Numera tudo de novo, 1..n por obra na ordem de lançamento, e acerta os contadores. É
-// a migração e o fim do semear.js (que insere fora de ordem). Fora desses dois, NUNCA:
+// Numera tudo de novo, 1..n por obra na ordem de lançamento, e acerta os contadores.
+// Quem chama é só a migração. Fora dela, NUNCA:
 // renumerar o que já está escrito na pasta é exatamente o que o número evita.
-export function renumerarObras() {
+function renumerarObras() {
   db.exec('UPDATE entrada SET numero = NULL; UPDATE saida SET numero = NULL')
   const lancs = db.prepare(`
     SELECT 'entrada' AS t, id, obra_id, criado_em FROM entrada

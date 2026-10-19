@@ -2,7 +2,7 @@
 // com vírgula. Usam o export.csv da obra e o extrato do credor - fica separado porque a
 // regra do Excel-BR não é assunto de rota.
 
-export const csvCampo = (v) => {
+const csvCampo = (v) => {
   const s = String(v ?? '')
   return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }

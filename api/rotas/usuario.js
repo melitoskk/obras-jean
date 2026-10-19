@@ -34,7 +34,7 @@ function gravarObras(id, obras) {
 
 // Se a alteração deixar o sistema sem ninguém ativo que cadastre usuário, ninguém mais
 // entra nesta tela. Confere DEPOIS de gravar, dentro da transação, e desfaz.
-export const semAdmin = () =>
+const semAdmin = () =>
   !db.prepare('SELECT perfil_id, permissoes FROM usuario WHERE ativo = 1').all().some((u) => permissoesDe(u).has('usuarios'))
 
 const existePerfil = (id) => !!db.prepare('SELECT 1 FROM perfil WHERE id = ?').get(Number(id))

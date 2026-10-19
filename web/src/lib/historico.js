@@ -9,7 +9,7 @@ const maisNovo = (a, b) => a.data > b.data || (a.data === b.data && (a.saidaId ?
 
 // Último registro (preço + data) do item, de qualquer fornecedor. Alimenta o
 // prefill do valor unitário e a sublinha do autocomplete.
-export function ultimoDoItem(historico, itemId) {
+function ultimoDoItem(historico, itemId) {
   let melhor = null
   for (const h of historico) {
     if (h.itemId !== itemId) continue

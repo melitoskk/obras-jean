@@ -10,3 +10,5 @@ web/dist/
 !.claude/**/*.md
 obra_prima_referencias/
 validacao/
+# MCP do Playwright da validação, com caminhos desta máquina
+.mcp.json

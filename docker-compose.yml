@@ -12,7 +12,7 @@ services:
     profiles: [dev]
     container_name: obras-dev
     image: obras-dev
-    build: .
+    build: ./web
     ports:
       - "6100:5173"
     volumes:

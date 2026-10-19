@@ -14,7 +14,7 @@ const r = express.Router()
 // Só imagem rasterizada - a mesma lista do /api/anexo inline. PDF e planta ficam na Galeria.
 const IMAGEM = /\.(png|jpe?g|gif|webp|avif)$/i
 
-export function visaoCliente(obraId) {
+function visaoCliente(obraId) {
   const obra = db.prepare(`
     SELECT o.id, o.nome, o.status, o.foto, o.cidade, o.dt_inicio, o.dt_fim, o.dt_inicio_real, o.dt_fim_real,
       c.nome AS cliente

@@ -10,7 +10,6 @@ import db from './db.js'
 // O `papel` fixo (admin/escritório/campo) ficou só como coluna antiga: desde 19/10/2026
 // (Jean: "o permissionamento é criado em tempo de uso") quem decide é o PERFIL do usuário,
 // ou as permissões personalizadas dele. Os três papéis viraram perfis prontos.
-export const PAPEIS = ['admin', 'escritorio', 'campo']
 
 // O catálogo é fixo - é o código que sabe o que cada rota faz. O que o administrador
 // monta é a combinação: perfis com nome, e permissões por usuário. `requer` é o que a
@@ -29,7 +28,7 @@ export const PERMISSOES = [
 ]
 export const TODAS = PERMISSOES.map((p) => p.id)
 // Os papéis de antes, agora perfis que o administrador pode editar ou copiar.
-export const PERFIS_PADRAO = [
+const PERFIS_PADRAO = [
   ['Administrador', TODAS, 'admin'],
   ['Escritório', TODAS.filter((p) => p !== 'usuarios'), 'escritorio'],
   ['Campo', ['diario'], 'campo'],
@@ -44,7 +43,7 @@ export function normalizar(lista) {
 db.exec('CREATE TABLE IF NOT EXISTS usuario (id INTEGER PRIMARY KEY, nome TEXT NOT NULL UNIQUE, senha TEXT NOT NULL)')
 // ALTER idempotente. O DEFAULT 'admin' só vale pras linhas que já existiam: até aqui
 // quem entrava podia tudo, e o banco existente continua assim. Usuário novo sempre
-// nasce com papel explícito (rotas/usuario.js, criar-usuario.js).
+// nasce com papel explícito (rotas/usuario.js).
 {
   const tem = new Set(db.prepare('PRAGMA table_info(usuario)').all().map((c) => c.name))
   if (!tem.has('papel')) {
@@ -75,7 +74,7 @@ if (db.prepare('SELECT COUNT(*) n FROM perfil').get().n === 0) {
       .run(nome, papel)
   }
 }
-export const perfilAdmin = () => db.prepare("SELECT id FROM perfil WHERE nome = 'Administrador'").get()?.id
+const perfilAdmin = () => db.prepare("SELECT id FROM perfil WHERE nome = 'Administrador'").get()?.id
 
 // Obras em que o usuário trabalha. Só quem não tem `todas_obras` é filtrado por ela;
 // pros outros a tabela nem é consultada.
@@ -135,7 +134,7 @@ const SEGREDO = process.env.OBRAS_SEGREDO || (() => {
   return readFileSync(arq, 'utf8').trim()
 })()
 const assina = (id, senha) => createHmac('sha256', SEGREDO).update(`${id}:${senha}`).digest('hex')
-export const selo = (u) => `${u.id}.${assina(u.id, u.senha)}`
+const selo = (u) => `${u.id}.${assina(u.id, u.senha)}`
 const buscaUsuario = db.prepare('SELECT id, nome, senha, papel, ativo, perfil_id, permissoes FROM usuario WHERE id = ?')
 export function abre(cookie) {
   if (!cookie) return null
@@ -270,7 +269,7 @@ const obraDoOrc = db.prepare('SELECT obra_id FROM orcamento WHERE id = ?')
 const obraDaSaidaQ = db.prepare('SELECT f.obra_id FROM saida s JOIN fase f ON f.id = s.fase_id WHERE s.id = ?')
 const obraDaEntrada = db.prepare('SELECT obra_id FROM entrada WHERE id = ?')
 const obraDaPendencia = db.prepare('SELECT obra_id FROM pendencia WHERE id = ?')
-export function obraDoPedido({ path, query = {}, body = {} }) {
+function obraDoPedido({ path, query = {}, body = {} }) {
   let m
   if ((m = path.match(/^\/api\/obras?\/(\d+)/))) return Number(m[1])
   if (query.obra) return Number(query.obra)

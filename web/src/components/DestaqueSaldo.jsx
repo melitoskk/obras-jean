@@ -4,7 +4,7 @@ import { formatMoeda } from '../lib/format'
 // O número que se procura primeiro ao abrir a obra (UPDATE.md §11.1), em cima das
 // abas - vale pra todas. São DOIS números, lado a lado e cada um com a sua conta
 // escrita embaixo, porque saldo e caixa usam as mesmas parcelas e trocar um pelo
-// outro dá um valor plausível e errado (o mesmo motivo de fluxo.test.mjs existir).
+// outro dá um valor plausível e errado.
 // Saldo primeiro e maior: é a pergunta "a obra está no azul?".
 export default function DestaqueSaldo({ obraId, saldo = 0, caixa = 0, aPagar = 0, aReceber = 0, taxaDevida = 0 }) {
   return (

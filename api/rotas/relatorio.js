@@ -143,7 +143,7 @@ export function aReceberPrevisto(fases, taxaAdm, recebido, obraConcluida = false
 // Contas a pagar (rodada 2, A5): toda saída lançada sem o Pago, das obras que a pessoa
 // vê, do vencimento mais antigo pro mais novo e as sem vencimento no fim - é a ordem em
 // que se paga. `visiveis` é o Set de obrasVisiveis (null = todas); `obraId` filtra uma.
-export function contasAPagar(visiveis, obraId = null) {
+function contasAPagar(visiveis, obraId = null) {
   return db.prepare(`
     SELECT s.id, s.numero, s.data, s.vencimento, s.valor, s.descricao, s.pago_obs AS boleto,
       f.obra_id, o.nome AS obra, f.codigo AS fase_codigo, f.nome AS fase, fo.nome AS fornecedor
@@ -251,7 +251,7 @@ r.get('/api/relatorios/estimado', (req, res) => {
 //
 // Sem `fase`, devolve só a obra e as fases dela, pro combo. Fase inativa entra se tiver
 // lançamento, como no relatório 2: sumir com ela sumiria com dinheiro.
-export function extratoFase(obraId, faseId = null) {
+function extratoFase(obraId, faseId = null) {
   const obra = db.prepare(`
     SELECT o.id, o.nome, c.nome AS cliente
     FROM obra o LEFT JOIN cliente c ON c.id = o.cliente_id WHERE o.id = ?

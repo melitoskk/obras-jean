@@ -13,7 +13,7 @@ const r = express.Router()
 // `obraId` opcional: o extrato que se manda costuma ser de UMA obra.
 // `itens` são as linhas da nota que são dele - com fornecedor no cabeçalho, todas.
 // `obras` (Set) recorta pra quem não vê todas as obras (rodada 4, A15); null = todas.
-export function extratoDoCredor(fornecedorId, obraId = null, obras = null) {
+function extratoDoCredor(fornecedorId, obraId = null, obras = null) {
   const linhas = db.prepare(`
     SELECT s.id, s.numero, s.data, s.criado_em, s.descricao, s.vencimento, s.pago_em, s.pago_obs,
       s.anexo, s.fornecedor_id AS cabecalho, sc.valor,

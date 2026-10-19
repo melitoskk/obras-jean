@@ -373,9 +373,9 @@ r.get('/api/obra/:id/fluxo', (req, res) => {
   res.json({ ...caixaDaObra(id), obra })
 })
 
-// Exportada pro check de fluxo.test.mjs: é dinheiro somado em SQL, e soma de dinheiro
+// Dinheiro somado em SQL: ao mexer, conferir com uma obra de verdade - soma de dinheiro
 // que ninguém verifica é como a `fase.orcado` que passou meses devolvendo zero.
-export function caixaDaObra(obra_id) {
+function caixaDaObra(obra_id) {
   // `realizado` conta TUDO (a obra consumiu o material quando a nota chegou) e
   // `aberto` é a parte que ainda não saiu do caixa - PROJETO-v3 §7.2.
   const porFase = db.prepare(`
