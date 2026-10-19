@@ -18,6 +18,16 @@ mkdirSync(ANEXOS, { recursive: true })
 const app = express()
 app.use(express.json())
 
+// Produção num container só (Dockerfile.prod): WEB_DIST aponta pro front compilado, e a
+// própria API serve as telas. Antes do login de propósito - a tela de login é uma delas.
+// Toda rota que não é /api devolve o index.html: quem resolve /obra/12 é o React Router.
+// Em desenvolvimento WEB_DIST não existe e quem serve o front é o Vite.
+const WEB = process.env.WEB_DIST
+if (WEB) {
+  app.use(express.static(WEB))
+  app.get(/^(?!\/api\/).*/, (req, res) => res.sendFile(join(WEB, 'index.html')))
+}
+
 // Auth: login/logout/eu são públicas; tudo abaixo de exigirLogin pede sessão.
 app.post('/api/login', login)
 app.post('/api/logout', logout)

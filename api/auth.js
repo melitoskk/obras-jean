@@ -3,6 +3,8 @@
 // Permissões (UPDATE.md §5): quem pode o quê é decidido AQUI, no servidor - a tela só
 // esconde o que já seria recusado.
 import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypto'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import db from './db.js'
 
 // O `papel` fixo (admin/escritório/campo) ficou só como coluna antiga: desde 19/10/2026
@@ -124,7 +126,14 @@ if (db.prepare('SELECT COUNT(*) n FROM usuario').get().n === 0) {
 // O selo é o ID (renomear não troca de pessoa) e a assinatura cobre o hash da senha:
 // trocar a senha derruba as sessões abertas daquele usuário sem tabela de sessão.
 // Inativar derruba porque exigirLogin relê o usuário a cada requisição.
-const SEGREDO = process.env.OBRAS_SEGREDO || 'obras-dev-segredo'
+// O segredo vem de OBRAS_SEGREDO; sem ele, um aleatório gerado na primeira subida e guardado
+// ao lado do banco (o mesmo volume do backup). Um valor fixo no código deixava qualquer um
+// que lesse o repositório forjar o cookie de qualquer usuário.
+const SEGREDO = process.env.OBRAS_SEGREDO || (() => {
+  const arq = join(dirname(process.env.OBRAS_DB || '/data/obras.db'), 'segredo')
+  if (!existsSync(arq)) writeFileSync(arq, randomBytes(32).toString('hex'), { mode: 0o600 })
+  return readFileSync(arq, 'utf8').trim()
+})()
 const assina = (id, senha) => createHmac('sha256', SEGREDO).update(`${id}:${senha}`).digest('hex')
 export const selo = (u) => `${u.id}.${assina(u.id, u.senha)}`
 const buscaUsuario = db.prepare('SELECT id, nome, senha, papel, ativo, perfil_id, permissoes FROM usuario WHERE id = ?')

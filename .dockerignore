@@ -1,1 +1,5 @@
-web/node_modules
+**/node_modules
+web/dist
+.git
+validacao
+obra_prima_referencias

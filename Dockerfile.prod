@@ -1,0 +1,23 @@
+# Produção: uma imagem, um container. A primeira etapa compila o front; a final leva só a
+# API com as dependências de produção e o front compilado em /app/public, que a própria
+# API serve (WEB_DIST). Banco, anexos e o segredo da sessão ficam no volume /data.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+FROM node:22-alpine AS web
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
+
+FROM node:22-alpine
+WORKDIR /app
+ENV NODE_ENV=production WEB_DIST=/app/public
+COPY api/package.json api/package-lock.json ./
+RUN npm ci --omit=dev
+COPY api/ ./
+COPY --from=web /web/dist ./public
+EXPOSE 7100
+VOLUME /data
+# --experimental-sqlite: node:sqlite ainda é experimental no Node 22 (só o flag).
+CMD ["node", "--experimental-sqlite", "server.js"]
