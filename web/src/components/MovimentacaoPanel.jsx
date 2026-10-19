@@ -7,7 +7,7 @@ import Badge from '../ui/Badge'
 import Faixa from '../ui/Faixa'
 import Confirm from '../ui/Confirm'
 import FileDrop from '../ui/FileDrop'
-import { Campos, Campo, Secao, Input, Check } from '../ui/Form'
+import { Campos, Campo, Secao, Input, Check, Radios } from '../ui/Form'
 import { MoneyInput } from '../ui/Numeros'
 import ItensEditor, { linhaVazia } from './ItensEditor'
 import { hoje, mult, numeroLancamento, formatData } from '../lib/format'
@@ -42,6 +42,9 @@ export default function MovimentacaoPanel({
   // Pagar é um check aqui dentro - não existe módulo de contas a pagar. Lançamento
   // novo nasce pago (a rajada normal é nota já paga); desmarcar deixa em aberto.
   const [fornecedorId, setFornecedorId] = useState(mov?.fornecedor_id ?? null)
+  // Material ou mão de obra da nota sem itens (rodada 1, A5). Sem escolha, vale o que o
+  // fornecedor diz de si (só presta serviço = mão de obra, só fornece material = material).
+  const [tipoCusto, setTipoCusto] = useState(mov?.tipo_custo ?? null)
   const [vencimento, setVencimento] = useState(mov?.vencimento ?? '')
   const [pagoEm, setPagoEm] = useState(mov ? mov.pago_em : hoje())
   const [pagoObs, setPagoObs] = useState(mov?.pago_obs ?? '')
@@ -85,6 +88,10 @@ export default function MovimentacaoPanel({
 
   // Fase concluída também só avisa (UPDATE.md §11.2, Dúvida 13): a nota atrasada
   // chega depois de a fase acabar, e ela é da fase mesmo assim.
+  const fornecedor = fornecedores.find((f) => f.id === fornecedorId)
+  const tipoDoFornecedor = fornecedor?.presta_servico && !fornecedor?.fornece_material ? 'mao_de_obra'
+    : fornecedor?.fornece_material && !fornecedor?.presta_servico ? 'materiais' : null
+  const tipoEfetivo = tipoCusto ?? tipoDoFornecedor
   const concluidaEm = fases.find((f) => f.id === faseId)?.concluida_em
   const depoisDe = (dias) => new Date(Date.now() + dias * 864e5).toISOString().slice(0, 10)
   // Sinaliza, não bloqueia: estouro pinta de vermelho e salva do mesmo jeito.
@@ -147,6 +154,7 @@ export default function MovimentacaoPanel({
         ...(tipo === 'saida'
           ? {
               fornecedor_id: fornecedorId, servico_catalogo_id: servicoId,
+              tipo_custo: mostrarItens ? null : tipoEfetivo,
               vencimento: vencimento || null, pago_em: pagoEm, pago_obs: pagoObs,
             }
           : {}),
@@ -270,10 +278,24 @@ export default function MovimentacaoPanel({
               historico={historico}
               vinculos={vinculos}
               fornecedorPadrao={fornecedorId}
-              onCriarInsumo={onCriarInsumo}
+              // Item criado na hora nasce com o tipo do fornecedor da nota (rodada 1, A5):
+              // na nota do empreiteiro, "mão de obra da semana" não é material.
+              onCriarInsumo={(nome) => onCriarInsumo(nome, tipoDoFornecedor)}
               onCriarFornecedor={onCriarFornecedor}
               onPrecoNovo={onPrecoNovo}
             />
+          )}
+          {!mostrarItens && (
+            <Campos lbl={90}>
+              <Campo label="Tipo">
+                <Radios
+                  name="tipo_custo"
+                  value={tipoEfetivo ?? ''}
+                  onChange={setTipoCusto}
+                  opcoes={[{ valor: 'materiais', label: 'Material' }, { valor: 'mao_de_obra', label: 'Mão de obra' }]}
+                />
+              </Campo>
+            </Campos>
           )}
           <Secao>Lançamento</Secao>
         </>

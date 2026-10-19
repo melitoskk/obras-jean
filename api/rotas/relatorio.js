@@ -23,18 +23,20 @@ const obraDe = (req) => Number(req.query.obra) || null
 //
 // O período filtra pela data da NOTA (`s.data`), a mesma do extrato; `pago` diz se a
 // parte já saiu do caixa. Lançado, pago e em aberto saem os três da mesma linha.
-export const DIMENSOES = ['fase', 'servico', 'insumo', 'credor']
+export const DIMENSOES = ['fase', 'servico', 'insumo', 'credor', 'tipo']
 
-export function pagamentos({ por = 'fase', obra = null, de = null, ate = null } = {}) {
+export function pagamentos({ por = 'fase', obra = null, fase = null, de = null, ate = null } = {}) {
+  // `fase` filtra pelo NOME (rodada 1, A9): com todas as obras, é a fundação de cada uma.
   const saidas = db.prepare(`
     SELECT s.id, s.numero, s.data, s.descricao, s.valor, s.pago_em,
-      o.id AS obra_id, o.nome AS obra, f.nome AS fase, sc.nome AS servico
+      o.id AS obra_id, o.nome AS obra, f.nome AS fase, sc.nome AS servico, fo.nome AS fornecedor
     FROM saida s JOIN fase f ON f.id = s.fase_id JOIN obra o ON o.id = f.obra_id
     LEFT JOIN servico_catalogo sc ON sc.id = s.servico_catalogo_id
-    WHERE (:obra IS NULL OR o.id = :obra)
+    LEFT JOIN fornecedor fo ON fo.id = s.fornecedor_id
+    WHERE (:obra IS NULL OR o.id = :obra) AND (:fase IS NULL OR f.nome = :fase)
       AND (:de IS NULL OR s.data >= :de) AND (:ate IS NULL OR s.data <= :ate)
     ORDER BY s.data, s.criado_em, s.id
-  `).all({ obra, de, ate })
+  `).all({ obra, fase, de, ate })
 
   // A fase e o serviço agrupam pelo NOME, sem código: com "todas as obras" a fundação
   // de cada obra é uma fase diferente, e a pergunta é quanto foi pra fundação. O código
@@ -50,12 +52,13 @@ export function pagamentos({ por = 'fase', obra = null, de = null, ate = null } 
     credor: partesPor(`
       SELECT c.saida_id, f.nome AS grupo, c.valor FROM saida_credor c JOIN fornecedor f ON f.id = c.fornecedor_id
     `, null, 'Sem credor'),
+    tipo: porTipo(),
   }[por]
 
   return saidas.flatMap((s) => partes(s).map(([grupo, valor]) => ({
     grupo, valor, pago: !!s.pago_em,
     id: s.id, numero: s.numero, data: s.data, descricao: s.descricao,
-    obra: s.obra, fase: s.fase,
+    obra: s.obra, fase: s.fase, fornecedor: s.fornecedor,
   })))
 }
 
@@ -75,13 +78,36 @@ function partesPor(sql, semNome, resto) {
   }
 }
 
+// Material × mão de obra (rodada 1, A5). A linha com item leva o tipo do item; o que a
+// nota tem sem item (linha avulsa, ou a nota inteira lançada só pelo valor) leva o tipo
+// escolhido na nota ou, sem ele, o do fornecedor - da linha, senão o do cabeçalho -
+// quando ele só presta serviço ou só fornece material. O resto: "Sem tipo".
+const TIPO = { materiais: 'Material', mao_de_obra: 'Mão de obra' }
+function porTipo() {
+  const doFornecedor = (f) => (f?.presta_servico && !f?.fornece_material ? 'mao_de_obra'
+    : f?.fornece_material && !f?.presta_servico ? 'materiais' : null)
+  const forn = new Map(db.prepare('SELECT id, fornece_material, presta_servico FROM fornecedor').all().map((f) => [f.id, f]))
+  const notas = new Map(db.prepare('SELECT id, tipo_custo, fornecedor_id FROM saida').all().map((s) => [s.id, s]))
+  const linhas = Map.groupBy(db.prepare(`
+    SELECT si.saida_id, i.tipo_custo, si.fornecedor_id, CAST(ROUND(si.qtd * si.valor_unit) AS INTEGER) AS valor
+    FROM saida_item si LEFT JOIN insumo i ON i.id = si.item_id
+  `).all(), (l) => l.saida_id)
+  return (s) => {
+    const n = notas.get(s.id)
+    const daNota = n?.tipo_custo ?? doFornecedor(forn.get(n?.fornecedor_id))
+    const ps = (linhas.get(s.id) ?? []).map((l) => [TIPO[l.tipo_custo ?? daNota ?? doFornecedor(forn.get(l.fornecedor_id))] ?? 'Sem tipo', l.valor])
+    const falta = s.valor - ps.reduce((a, [, v]) => a + v, 0)
+    return falta ? [...ps, [TIPO[daNota] ?? 'Sem tipo', falta]] : ps
+  }
+}
+
 r.get('/api/relatorios/contas-a-pagar', (req, res) => {
   res.json(contasAPagar(obrasVisiveis(req), obraDe(req)))
 })
 
 r.get('/api/relatorios/pagamentos', (req, res) => {
   const por = DIMENSOES.includes(req.query.por) ? req.query.por : 'fase'
-  res.json(pagamentos({ por, obra: obraDe(req), de: dataDe(req.query.de), ate: dataDe(req.query.ate) }))
+  res.json(pagamentos({ por, obra: obraDe(req), fase: req.query.fase || null, de: dataDe(req.query.de), ate: dataDe(req.query.ate) }))
 })
 
 // Taxa de administração devida pela fase (decidido com o Jean em 17/10/2026): só

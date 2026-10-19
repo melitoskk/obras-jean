@@ -34,9 +34,10 @@ const DIMENSOES = [
   { valor: 'servico', label: 'Por serviço' },
   { valor: 'insumo', label: 'Por insumo' },
   { valor: 'credor', label: 'Por credor' },
+  { valor: 'tipo', label: 'Material × mão de obra' },
 ]
 
-const TITULO_DIMENSAO = { fase: 'Fase', servico: 'Serviço', insumo: 'Insumo', credor: 'Credor' }
+const TITULO_DIMENSAO = { fase: 'Fase', servico: 'Serviço', insumo: 'Insumo', credor: 'Credor', tipo: 'Tipo' }
 
 const NIVEIS = [
   { valor: 'sintetico', label: 'Sintético' },
@@ -107,13 +108,21 @@ function Pagamentos({ filtro, setFiltro, opcoesObra }) {
   const analitico = filtro('nivel', 'sintetico') === 'analitico'
   const [linhas, setLinhas] = useState(null)
   const obra = filtro('obra')
+  const fase = filtro('fase')
   const de = filtro('de')
   const ate = filtro('ate')
+  // As fases que têm lançamento na obra (ou em todas), pelo nome - é por ele que filtra.
+  const [fases, setFases] = useState([])
 
   useEffect(() => {
     setLinhas(null)
-    getRelPagamentos({ por, obra, de, ate }).then(setLinhas).catch(() => setLinhas([]))
-  }, [por, obra, de, ate])
+    getRelPagamentos({ por, obra, fase, de, ate }).then(setLinhas).catch(() => setLinhas([]))
+  }, [por, obra, fase, de, ate])
+  useEffect(() => {
+    getRelPagamentos({ por: 'fase', obra })
+      .then((ls) => setFases([...new Set(ls.map((l) => l.grupo))].sort().map((n) => ({ valor: n, label: n }))))
+      .catch(() => setFases([]))
+  }, [obra])
 
   const { grupos, total } = useMemo(() => {
     const m = new Map()
@@ -134,7 +143,7 @@ function Pagamentos({ filtro, setFiltro, opcoesObra }) {
     { key: g.grupo, nivel: 0, temFilhos: analitico, rotulo: g.grupo, lancado: g.lancado, pago: g.pago, parte: pct(g.lancado, total.lancado) },
     ...(analitico ? g.itens.map((l, i) => ({
       key: `${g.grupo}-${l.id}-${i}`, nivel: 1, lanc: l,
-      rotulo: [numeroLancamento(l.numero), l.descricao].filter(Boolean).join(' · '),
+      rotulo: [numeroLancamento(l.numero), l.fornecedor, l.descricao].filter(Boolean).join(' · '),
       lancado: l.valor, pago: l.pago ? l.valor : 0,
     })) : []),
   ])
@@ -143,7 +152,10 @@ function Pagamentos({ filtro, setFiltro, opcoesObra }) {
     <>
       <Filtros>
         <EscolhaObra vazio="Todas as obras" filtro={filtro} setFiltro={setFiltro} opcoesObra={opcoesObra} />
-        <div className="w-[150px]">
+        <div className="w-[200px]">
+          <Select vazio="Todas as fases" opcoes={fases} value={fase} onChange={setFiltro('fase')} />
+        </div>
+        <div className="w-[190px]">
           <Select vazio={null} opcoes={DIMENSOES} value={por} onChange={setFiltro('por')} />
         </div>
         <Rotulo>Data da nota de</Rotulo>

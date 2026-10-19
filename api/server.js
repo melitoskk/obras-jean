@@ -352,7 +352,7 @@ const gravarLinhas = (saidaId, itens) => {
 
 // pago_em e pago_obs são os ÚLTIMOS: o UPDATE fatia esta lista pra deixá-los de fora
 // quando não vierem no corpo.
-const COLS_SAIDA = 'fase_id, valor, data, descricao, anexo, fornecedor_id, vencimento, servico_catalogo_id, pago_em, pago_obs'
+const COLS_SAIDA = 'fase_id, valor, data, descricao, anexo, fornecedor_id, vencimento, servico_catalogo_id, tipo_custo, pago_em, pago_obs'
 
 // O serviço tem que ser da fase do lançamento: o id vem do cliente, e um serviço de
 // outra fase faria o realizado aparecer no serviço certo da fase errada.
@@ -368,9 +368,11 @@ function escreverSaida(body, id) {
     fase_id, valor, data, descricao = null, anexo = null, itens = [],
     fornecedor_id = null, vencimento = null, servico_catalogo_id = null,
   } = body
+  // Material ou mão de obra da nota sem itens (rodada 1, A5); fora disso, não disse.
+  const tipo_custo = ['materiais', 'mao_de_obra'].includes(body.tipo_custo) ? body.tipo_custo : null
   // criado_em fica FORA de COLS_SAIDA de propósito: ele só se escreve no INSERT, e o
   // UPDATE lá embaixo fatia essa mesma lista. Editar uma nota não a relança.
-  const ins = db.prepare(`INSERT INTO saida (${COLS_SAIDA}, criado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+  const ins = db.prepare(`INSERT INTO saida (${COLS_SAIDA}, criado_em) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
   const quando = agora()
 
   // O check "Pago" do próprio lançamento - quem paga é quem lança. A observação vale
@@ -384,7 +386,7 @@ function escreverSaida(body, id) {
     if (id) {
       // A baixa só se escreve se vier no corpo: um PATCH parcial não pode desfazê-la
       // sem querer.
-      const valores = [fase_id, valor, data, descricao, anexo, fornecedor_id, vencimento, servico_catalogo_id]
+      const valores = [fase_id, valor, data, descricao, anexo, fornecedor_id, vencimento, servico_catalogo_id, tipo_custo]
       const cols = COLS_SAIDA.split(', ').slice(0, valores.length)
       if ('pago_em' in body) { cols.push('pago_em', 'pago_obs'); valores.push(pago_em, pago_obs) }
       db.prepare(`UPDATE saida SET ${cols.map((c) => `${c}=?`).join(',')} WHERE id=?`).run(...valores, id)
@@ -394,7 +396,7 @@ function escreverSaida(body, id) {
     }
     const saidaId = Number(
       ins.run(fase_id, valor, data, descricao, anexo, fornecedor_id, vencimento, servico_catalogo_id,
-        pago_em, pago_obs, quando)
+        tipo_custo, pago_em, pago_obs, quando)
         .lastInsertRowid,
     )
     gravarLinhas(saidaId, itens)

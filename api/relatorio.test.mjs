@@ -62,6 +62,23 @@ assert.deepEqual(porGrupo(pagamentos({ por: 'insumo', obra })), {
 assert.deepEqual(porGrupo(pagamentos({ por: 'credor' })), {
   Loja: 1_000_00, 'Sem credor': 1_000_00, 'José': 7_000_00,
 }, 'credor atravessa obras; frete sem fornecedor e nota sem ninguém ficam sem credor')
+// Por tipo (rodada 1, A5): material × mão de obra. A linha com item leva o tipo do item;
+// a nota sem item, o tipo escolhido nela ou, sem ele, o do fornecedor (só presta serviço
+// = mão de obra, só fornece material = material). O resto fica "Sem tipo".
+db.prepare('UPDATE fornecedor SET presta_servico = 1 WHERE id = ?').run(jose)
+db.prepare("UPDATE saida SET tipo_custo = 'materiais' WHERE valor = 70000").run()
+assert.deepEqual(porGrupo(pagamentos({ por: 'tipo', obra })), {
+  Material: 1_700_00, 'Mão de obra': 5_000_00, 'Sem tipo': 300_00,
+})
+assert.equal(soma(pagamentos({ por: 'tipo', obra })), 7_000_00, 'o total é o da obra')
+// Filtro de fase (rodada 1, A9), pelo nome - a fundação de cada obra junto. A pergunta é
+// "na Fundação, quanto foi material e quanto mão de obra".
+assert.equal(soma(pagamentos({ por: 'tipo', fase: 'FUNDAÇÕES' })), 9_000_00)
+assert.deepEqual(pagamentos({ por: 'tipo', fase: 'NÃO EXISTE' }), [])
+// O analítico mostra quem cobrou (rodada 3, A5).
+assert.equal(pagamentos({ por: 'fase', obra }).find((l) => l.valor === 5_000_00).fornecedor, 'José')
+db.prepare("UPDATE saida SET tipo_custo = NULL WHERE valor = 70000").run()
+db.prepare('UPDATE fornecedor SET presta_servico = 0 WHERE id = ?').run(jose)
 // Fase agrupa por nome: a fundação das duas obras é uma linha só.
 assert.equal(Object.keys(porGrupo(pagamentos({ por: 'fase' }))).length, 1)
 // Pago × em aberto vem da nota: a empreita do José na Casa está em aberto.

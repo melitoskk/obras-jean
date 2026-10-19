@@ -399,7 +399,7 @@ export function caixaDaObra(obra_id) {
 
   const saidasRaw = db.prepare(`
     SELECT s.id, s.numero, s.fase_id, s.valor, s.data, s.descricao, s.anexo,
-           s.fornecedor_id, s.vencimento, s.pago_em, s.pago_obs, s.criado_em,
+           s.fornecedor_id, s.vencimento, s.pago_em, s.pago_obs, s.criado_em, s.tipo_custo,
            s.servico_catalogo_id, sc.nome AS servico_nome
     FROM saida s JOIN fase f ON f.id = s.fase_id
     LEFT JOIN servico_catalogo sc ON sc.id = s.servico_catalogo_id
@@ -488,8 +488,10 @@ r.patch('/api/insumos/:id', (req, res) => {
 r.post('/api/insumos', (req, res) => {
   const nome = String(req.body.nome ?? '').trim()
   if (!nome) return res.status(400).json({ erro: 'nome obrigatório' })
-  const r2 = db.prepare('INSERT INTO insumo (nome, incompleto) VALUES (?,1)').run(nome)
-  res.json({ id: Number(r2.lastInsertRowid), nome, tipo_custo: 'materiais', incompleto: 1 })
+  // O tipo vem da nota quando ela sabe (o fornecedor só presta serviço); senão, material.
+  const tipo = req.body.tipo_custo === 'mao_de_obra' ? 'mao_de_obra' : 'materiais'
+  const r2 = db.prepare('INSERT INTO insumo (nome, incompleto, tipo_custo) VALUES (?,1,?)').run(nome, tipo)
+  res.json({ id: Number(r2.lastInsertRowid), nome, tipo_custo: tipo, incompleto: 1 })
 })
 
 export default r

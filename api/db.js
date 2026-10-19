@@ -436,6 +436,12 @@ db.exec(`
   BEGIN UPDATE diario SET data = substr(NEW.criado_em, 1, 10) WHERE id = NEW.id; END;
 `)
 
+// Tipo da nota sem itens (rodada 1, A5): a empreita lançada só pelo valor não tem item
+// que diga se foi material ou mão de obra. NULL = não disse (o relatório olha o fornecedor).
+if (!db.prepare('PRAGMA table_info(saida)').all().some((c) => c.name === 'tipo_custo')) {
+  db.exec("ALTER TABLE saida ADD COLUMN tipo_custo TEXT CHECK (tipo_custo IN ('materiais', 'mao_de_obra'))")
+}
+
 // Número do lançamento (UPDATE.md §9). POR OBRA, entrada e saída na mesma sequência
 // (Jean, 19/10/2026): uma pasta física de comprovantes por obra, e o Nº 2 é o 2º papel
 // dela. Substituiu o `E-000231` / `S-000412` global por tipo (03/10/2026).

@@ -134,8 +134,8 @@ export default function ExtratoFase({
           previstoDaFase={previstoDaFase}
           realizadoDaFase={realizadoDaFase}
           onUpload={uploadAnexo}
-          onCriarInsumo={async (nome) => {
-            const novo = await criarInsumo(nome)
+          onCriarInsumo={async (nome, tipo) => {
+            const novo = await criarInsumo(nome, tipo)
             setDados((d) => ({ ...d, insumos: [...d.insumos, novo] }))
             return novo.id
           }}

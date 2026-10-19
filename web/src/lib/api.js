@@ -73,7 +73,7 @@ export const getVisao = (id) => req('GET', `/api/obra/${id}/visao`)
 export const concluirFase = (id, concluida_em, taxa = {}) => req('PATCH', `/api/fases/${id}`, { concluida_em, ...taxa })
 // Percentual de referência da fase (UPDATE.md §2), ponto-base; null = padrão do catálogo.
 export const patchFase = (id, dados) => req('PATCH', `/api/fases/${id}`, dados)
-export const criarInsumo = (nome) => req('POST', '/api/insumos', { nome })
+export const criarInsumo = (nome, tipo_custo) => req('POST', '/api/insumos', { nome, tipo_custo })
 export const patchInsumo = (id, dados) => req('PATCH', `/api/insumos/${id}`, dados)
 
 export const criarEntrada = (obra_id, e) => req('POST', '/api/entradas', { obra_id, ...e })
