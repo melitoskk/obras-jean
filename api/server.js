@@ -119,7 +119,7 @@ app.get('/api/obras', (req, res) => {
 // de coluna no SQL, e sem ela qualquer chave do corpo entraria na query.
 const CAMPOS_OBRA = ['nome', 'cliente_id', 'status', 'foto', 'cidade', 'categoria', 'observacao',
   'dt_inicio', 'dt_fim', 'dt_inicio_real', 'dt_fim_real',
-  'cei', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'uf']
+  'cei', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'uf', 'area']
 
 app.post('/api/obras', (req, res) => {
   const campos = CAMPOS_OBRA.filter((k) => k in req.body)

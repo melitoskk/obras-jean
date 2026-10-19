@@ -155,7 +155,8 @@ export default function Obras() {
           clientes={clientes}
           onClienteCriado={(c) => setClientes((s) => [...s, c])}
           onFechar={fechar}
-          onSalvo={() => { carregar(); fechar() }}
+          // Obra nova abre na aba Fases (rodada 1, A14): o próximo passo é montar a estimativa.
+          onSalvo={(novaId) => { carregar(); if (novaId) navegar(`/obra/${novaId}?aba=fases`); else fechar() }}
         />
       )}
     </>

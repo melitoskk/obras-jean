@@ -454,6 +454,12 @@ db.exec(`
   )
 `)
 
+// Área construída da obra em m² (rodada 1, A19), pro R$/m² - a conta que todo mundo faz
+// na cabeça pra saber se a obra está cara.
+if (!db.prepare('PRAGMA table_info(obra)').all().some((c) => c.name === 'area')) {
+  db.exec('ALTER TABLE obra ADD COLUMN area REAL')
+}
+
 // Número do lançamento (UPDATE.md §9). POR OBRA, entrada e saída na mesma sequência
 // (Jean, 19/10/2026): uma pasta física de comprovantes por obra, e o Nº 2 é o 2º papel
 // dela. Substituiu o `E-000231` / `S-000412` global por tipo (03/10/2026).

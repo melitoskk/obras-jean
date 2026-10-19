@@ -20,7 +20,8 @@ import {
   criarObra, patchObra, criarCliente, uploadAnexo, getObra,
   getOrcamentos, getOrcamento, criarOrcamento,
 } from '../lib/api'
-import { duracaoEntre, plural } from '../lib/format'
+import { duracaoEntre, plural, formatMoeda } from '../lib/format'
+import { QtdInput } from '../ui/Numeros'
 import { usePode } from '../lib/sessao'
 
 // Cadastro de obra - Obra-Prima-Cadastro-Obra.png. `obra` nulo = criar.
@@ -51,7 +52,12 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
   const pode = usePode()
   const cadastra = pode('cadastros')
   const valores = pode('ver_valores')
-  const [aba, setAba] = useState(cadastra ? 'dados' : 'diario')
+  // `?aba=fases`: a obra recém-criada abre direto onde se monta (rodada 1, A14).
+  const [aba, setAba] = useState(() => {
+    const pedida = new URLSearchParams(window.location.search).get('aba')
+    if (pedida === 'fases' && pode('estimativa')) return 'fases'
+    return cadastra ? 'dados' : 'diario'
+  })
   // O rascunho é o que o botão `+` do cliente deixou guardado antes de sair daqui.
   // Lê-e-apaga: só vale pra viagem de volta, não pra "nova obra" de meia hora depois.
   const [d, setD] = useState(() => {
@@ -154,9 +160,10 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
       // Só o que mudou desde que a obra foi carregada (rodada 2, A22): mandando tudo, a
       // aba que salvava por último devolvia os campos velhos e apagava o que a outra gravou.
       if (id) await patchObra(id, Object.fromEntries(Object.entries(campos).filter(([k, v]) => v !== obra?.[k])))
-      else await criarObra(campos)
+      const nova = id ? null : await criarObra(campos)
       setFaixa({ tipo: 'sucesso', texto: 'Operação executada com sucesso.' })
-      onSalvo?.()
+      // A obra nova volta com o id: quem chamou leva pra ela, na aba Fases.
+      onSalvo?.(nova?.id)
     } catch (e) {
       // `e.erro` é a frase do servidor: "Para concluir a obra, falta…".
       setFaixa({ tipo: 'erro', texto: e.erro ?? 'Não foi possível salvar.' })
@@ -255,6 +262,18 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
                   <div className="min-w-0 flex-1">
                     <Select {...campo('status')} vazio={null} opcoes={OPCOES_SITUACAO} />
                   </div>
+                </div>
+              </Campo>
+              {/* Área e R$/m² (rodada 1, A19): estimado e gasto divididos pela área. */}
+              <Campo label="Área">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="w-[110px]"><QtdInput value={d.area ?? 0} onChange={(v) => set('area', v || null)} /></div>
+                  <span className="text-[#777]">m²</span>
+                  {valores && d.area > 0 && obra && (
+                    <span className="text-[#777]">
+                      R$ {formatMoeda(Math.round(obra.orcado / d.area))}/m² estimado · R$ {formatMoeda(Math.round(obra.gasto / d.area))}/m² gasto
+                    </span>
+                  )}
                 </div>
               </Campo>
                 <Campo label="Observação">
@@ -370,7 +389,7 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
           garantirOrcamento={async () => (await criarOrcamento(d.id)).id}
           fases={orc?.fases ?? []}
           servicos={orc?.servicos ?? []}
-          onSalvo={() => { setOrc(undefined); onCaixaMudou?.() }}
+          onSalvo={(aviso) => { setOrc(undefined); onCaixaMudou?.(); if (aviso) setFaixa({ tipo: 'aviso', texto: aviso }) }}
         />
       )}
 

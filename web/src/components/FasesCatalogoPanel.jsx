@@ -82,12 +82,14 @@ export function FasesCatalogo({
       const id = orcamentoId ?? (await garantirOrcamento())
       const num = (p) => [...marcados].filter((k) => k[0] === p).map((k) => Number(k.slice(1)))
       const { mantidas } = await salvarFases(id, num('f'), num('s'))
-      onSalvo?.()
-      if (mantidas?.length) {
-        setFaixa({
-          tipo: 'aviso',
-          texto: `Salvo. ${mantidas.length} item(ns) mantidos por já terem valor ou lançamento: ${mantidas.join(', ')}.`,
-        })
+      const aviso = mantidas?.length
+        ? `Salvo. ${mantidas.length} item(ns) mantidos por já terem valor, lançamento ou registro no diário: ${mantidas.join(', ')}. Para tirar, mova ou exclua o que está neles.`
+        : null
+      // O aviso vai junto: na obra, salvar recarrega a estimativa e este painel remonta -
+      // a faixa daqui sumia antes de ser lida (rodada 2, A27). Quem chama mostra na dele.
+      onSalvo?.(aviso)
+      if (aviso) {
+        setFaixa({ tipo: 'aviso', texto: aviso })
       } else if (onFechar) {
         onFechar()
       } else {
