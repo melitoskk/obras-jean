@@ -601,6 +601,32 @@ for (const o of obras) {
   }
 }
 
+// Obra Concluída fecha de verdade (Jean, 18/10/2026: só se conclui com tudo fechado):
+// toda conta paga - no vencimento, ou na data da nota - e toda fase concluída no fim
+// real da obra, com a taxa da estimativa. Antes a demo tinha obra Concluída com fase
+// aberta e conta a pagar, o que a tela agora nem deixa fazer (rodada 2, A25).
+for (const o of db.prepare(`
+  SELECT o.id, o.dt_fim_real, (SELECT taxa_adm FROM orcamento WHERE obra_id = o.id AND ativo = 1) AS taxa
+  FROM obra o WHERE o.status = 'concluida'
+`).all()) {
+  db.prepare(`UPDATE saida SET pago_em = MAX(data, COALESCE(vencimento, data))
+    WHERE pago_em IS NULL AND fase_id IN (SELECT id FROM fase WHERE obra_id = ?)`).run(o.id)
+  db.prepare("UPDATE fase SET concluida_em = ?, taxa_tipo = 'pct', taxa_valor = ? WHERE obra_id = ? AND concluida_em IS NULL")
+    .run(o.dt_fim_real, o.taxa || 1000, o.id)
+}
+// Obra em andamento já passou pela primeira fase: ela sai concluída, com a taxa, na data
+// do último lançamento dela - pra demo ter extrato de fase fechada (M4 da validação).
+for (const f of db.prepare(`
+  SELECT f.id, (SELECT taxa_adm FROM orcamento WHERE obra_id = o.id AND ativo = 1) AS taxa,
+    (SELECT MAX(s.data) FROM saida s WHERE s.fase_id = f.id) AS ultima
+  FROM obra o JOIN fase f ON f.obra_id = o.id
+  WHERE o.status = 'ativa' AND f.ordem = (SELECT MIN(ordem) FROM fase WHERE obra_id = o.id AND inativa = 0)
+`).all()) {
+  if (f.ultima) {
+    db.prepare("UPDATE fase SET concluida_em = ?, taxa_tipo = 'pct', taxa_valor = ? WHERE id = ?").run(f.ultima, f.taxa || 1000, f.id)
+  }
+}
+
 // As obras se semeiam uma depois da outra, cada uma com datas do seu período: o
 // trigger numerou na ordem de INSERÇÃO, não na de lançamento. Renumera pela ordem real.
 renumerarObras()
