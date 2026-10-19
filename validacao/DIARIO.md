@@ -3,33 +3,31 @@
 ## Backlog
 | Origem | O que seria | Tamanho |
 |---|---|---|
-| R1-A5 | Escolher o tipo (material / mão de obra / equipamento) ao criar o item no lançamento; relatório e filtro "Por tipo" com fase | médio |
-| R1-A9 | Relatório de pagamentos com filtros combinados (fase + insumo + fornecedor) e colunas Qtd/Unid/Fornecedor (R3-A5) | médio |
+| R1-A9 | Pagamentos: filtros de insumo e fornecedor e colunas Qtd/Unid (o filtro de fase e o fornecedor no analítico já entraram) | pequeno/médio |
 | R1-A10 | Avanço físico por fase e projeção "vai fechar em R$ X" (depende da Dúvida 21 do UPDATE.md) | grande |
-| R1-A11 | Pendências: status aberta/feita, fase, responsável | médio |
-| R1-A12 | Celular: botão fixo "+ Lançar"; itens da nota em lista vertical | médio |
-| R1-A14 | Ao salvar obra nova, abrir direto na aba Fases | pequeno |
+| R1-A12 / R2-A29 | Celular: botão fixo "+ Lançar", itens da nota em lista vertical, menu "Mais" na barra de baixo | médio |
 | R1-A15 | Preço combinado: padrão "só nesta nota" sem popup; "Criar" com um clique, sem o campo em branco durante a pergunta (R3-A9) | pequeno |
-| R1-A16 | Busca do catálogo por palavras soltas; aviso "parecido com..." antes de criar | pequeno |
-| R1-A17 | Miniatura da foto no diário e foto do diário contando na Galeria | pequeno |
-| R1-A18 | Validar faixa de ano nas datas (ex.: 2000-2100) | pequeno |
-| R1-A19 | Área da obra (m²) e R$/m² | pequeno |
-| R2-A5/A28 | Contas a pagar de todas as obras por vencimento (Início + clique no cartão A pagar), vencidas em vermelho | médio |
+| R1-A16 | Aviso "parecido com..." antes de criar item ou fornecedor (a busca por palavras soltas já entrou) | pequeno |
 | R2-A7 | Quantidade: selecionar ao clicar de novo; avisar mais de 2 casas | pequeno |
-| R2-A9 | Campo "boleto / linha digitável" para conta a vencer | pequeno |
 | R2-A13 | "Descartar alterações?" ao fechar formulário alterado | pequeno/médio |
-| R2-A15 | Fases com número no Diário; um nome só para a estimativa ("000001" × "viva") | pequeno |
-| R2-A21 | Dossiê da obra em PDF; Exportar CSV nos relatórios; orçado, diferença e taxa (R3-A15) no extrato da fase; Visão do cliente durante a obra (propostas no relatório) | grande |
+| R2-A15 | Um nome só para a estimativa ("000001" × "viva") | pequeno |
+| R2-A21 | Dossiê da obra em PDF; Exportar CSV nos relatórios; orçado e diferença no extrato da fase; Visão do cliente durante a obra (propostas no relatório da rodada 2) | grande |
 | R2-A22 | Aviso "alguém alterou esta obra" (versão do registro) quando duas abas mudam o mesmo campo | médio |
-| R2-A24 | Data no Diário de obra (padrão hoje) | pequeno |
-| R2-A26 | Aviso de data no futuro e de pagamento antes da nota | pequeno |
-| R2-A27 | Tirar fase com gasto: dizer o motivo e oferecer mover os lançamentos | pequeno/médio |
-| R2-A29 | Celular: alvos de 40 px, menu "Mais" na barra (junto com R1-A12) | médio |
+| R2-A27 | Tirar fase com gasto: oferecer mover os lançamentos (o motivo já aparece) | pequeno/médio |
 | R2-A30 | Lista da fase ordenada por data, com opção de inverter | pequeno |
-| R3-A8 | Etiqueta "Inativo" no cadastro de cliente/fornecedor inativo | pequeno |
-| R3-A18 | Unidade junto dos preços na nota ("R$ 0,78/kg") | pequeno |
-| R3-A13/A19 | **Permissões configuráveis** (Jean, 18/10/2026). Hoje são 3 papéis fixos (`auth.js`: `PAPEIS`, `ROTAS_CAMPO`, `autorizado`). Seria: tabela `perfil` (nome + lista de permissões) e `usuario.perfil_id`, com permissão avulsa por usuário por cima; os três papéis de hoje viram perfis prontos. Permissões por área e ação: ver dinheiro, lançar, editar cadastro, concluir/reabrir fase e taxa, Galeria por pasta (ver/enviar/excluir; excluir só o próprio), usuários. O servidor continua decidindo (`autorizado` lê o perfil), e a tela do admin ganha "Perfis". Exige autor em `arquivo` para "excluir só o próprio". | grande |
-| R2-A25 | `semear.js`: obra Concluída nasce com fases concluídas (com taxa) e nada a pagar | pequeno |
+
+### Feito do backlog em 19/10/2026
+| Origem | O que entrou | Commit |
+|---|---|---|
+| Jean 19/10 | Numeração dos lançamentos por obra, entrada e saída na mesma sequência (o Nº 2 é o 2º comprovante da pasta física) | cf31b60 |
+| R3-A13/A19 | Permissões configuráveis: perfis editáveis (Administrador, Escritório, Campo e os que o admin criar) e permissões por usuário; Documentos da Galeria com permissão própria; excluir arquivo só quem enviou | f6507f4 |
+| R2-A24, R1-A18, R2-A26, R2-A9, R1-A17, R2-A15, R2-A29 | Data no diário; ano de 2000 a 2100 nas datas; aviso de data no futuro e de pagamento antes da nota; boleto em conta a vencer; miniatura das fotos e número da fase no diário; ícones maiores | 8f2c6db |
+| R2-A5/A28 | Contas a pagar de todas as obras por vencimento, vencidas em vermelho (relatório, cartão no Início, "A pagar" do topo leva a ele); obra conferida em toda rota pra quem não vê todas | 7e4378f |
+| R1-A5, R1-A9, R3-A5 | Material × mão de obra no relatório de Pagamentos, com filtro de fase; tipo na nota sem itens e no item criado na hora; fornecedor no analítico | 974df41 |
+| R1-A11 | Pendências da obra, com fase, responsável e prazo | 50a2a37 |
+| R1-A16, R3-A18, R3-A8 | Busca por palavras soltas; unidade junto do preço; "inativo" no título do cadastro | 8e78c5e |
+| R1-A14, R1-A19, R2-A27 | Obra nova abre na aba Fases; área e R$/m²; aviso da fase mantida aparece | 9aab05a |
+| R2-A25 | Semente com obra concluída coerente e primeira fase fechada nas em andamento | aa06c3d |
 
 ## Perguntas ao Jean
 1. **R2-A3 Pagamento da taxa.** Quando o cliente paga a taxa de administração, como você registra: como uma entrada comum (vai para o caixa da obra), ou como um recebimento separado, que não entra no caixa?
