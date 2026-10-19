@@ -3,7 +3,7 @@
 // O resto é Intl e não vale teste.
 import assert from 'node:assert/strict'
 import {
-  mult, formatQtd, formatMoeda, lerQtd, lerColado, teclaCorrida,
+  mult, formatQtd, formatMoeda, lerQtd, lerColado, teclaCorrida, vencimentoTxt,
   mascaraDoc, mascaraCep, mascaraTel, duracaoEntre, linkWhats, plural,
 } from './format.js'
 
@@ -115,3 +115,11 @@ assert.equal(teclaCorrida({ valor: 99900, casas: 2 }, ',', true).casas, 0)
 assert.equal(teclaCorrida({ valor: 99900, casas: null }, 'Backspace', true).valor, 0)
 // Tecla que não é da corrida devolve null: o campo deixa passar (Tab, setas).
 assert.equal(teclaCorrida({ valor: 1, casas: null }, 'Tab', false), null)
+
+// Vencimento da conta em aberto (rodada 2, A28): vencida diz há quanto tempo, em vermelho.
+assert.deepEqual(vencimentoTxt('2026-08-30', '2026-10-18'), { texto: 'Vencida há 49 dias', vencida: true })
+assert.deepEqual(vencimentoTxt('2026-10-17', '2026-10-18'), { texto: 'Vencida há 1 dia', vencida: true })
+assert.deepEqual(vencimentoTxt('2026-10-18', '2026-10-18'), { texto: 'Vence hoje', vencida: false })
+assert.deepEqual(vencimentoTxt('2026-10-28', '2026-10-18'), { texto: 'Vence 28/10/2026', vencida: false })
+assert.deepEqual(vencimentoTxt(null, '2026-10-18'), { texto: 'Em aberto', vencida: false })
+console.log('format ok (vencimento)')

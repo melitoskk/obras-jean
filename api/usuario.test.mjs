@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 const dir = mkdtempSync(join(tmpdir(), 'obras-'))
 process.env.OBRAS_DB = join(dir, 'teste.db')
 const { default: db } = await import('./db.js')
-const { autorizado, selo, abre, hashSenha, obrasVisiveis, podeObra, podeEditarPost, podeAnexo, podePasta, permissoesDe, normalizar, TODAS } = await import('./auth.js')
+const { autorizado, selo, abre, hashSenha, obrasVisiveis, podeObra, podeEditarPost, podeAnexo, podePasta, permissoesDe, normalizar, TODAS, obraDoPedido, exigirObra } = await import('./auth.js')
 const { semAdmin } = await import('./rotas/usuario.js')
 
 const id = (r) => Number(r.lastInsertRowid)
@@ -134,6 +134,25 @@ assert.ok(podeAnexo(escr, '5-e__contrato.pdf'))
 // Recém-enviado (nada aponta pra ele ainda): abre pra quem pode enviar, não pra quem não pode.
 assert.ok(podeAnexo(req, '9-z__solto.jpg'))
 assert.ok(!podeAnexo({ permissoes: new Set(), usuarioId: ana }, '9-z__solto.jpg'))
+
+// 5e. Obra do pedido (19/10/2026): quem não vê todas as obras não alcança a dos outros
+// por nenhuma rota - nem as de dinheiro, que antes só o campo deixava de alcançar.
+assert.equal(obraDoPedido({ path: `/api/obra/${predio}/fluxo` }), predio)
+assert.equal(obraDoPedido({ path: `/api/obras/${casa}` }), casa)
+assert.equal(obraDoPedido({ path: '/api/relatorios/estimado', query: { obra: String(predio) } }), predio)
+assert.equal(obraDoPedido({ path: '/api/saidas', body: { fase_id: fase } }), casa)
+assert.equal(obraDoPedido({ path: `/api/fases/${fase}` }), casa)
+assert.equal(obraDoPedido({ path: '/api/relatorios/pagamentos' }), 'todas')
+assert.equal(obraDoPedido({ path: '/api/relatorios/contas-a-pagar' }), null, 'esta recorta sozinha')
+assert.equal(obraDoPedido({ path: '/api/fornecedores/3/extrato' }), 'todas')
+assert.equal(obraDoPedido({ path: '/api/insumos' }), null)
+const resposta = () => { const r = { status: (c) => { r.code = c; return r }, json: () => r }; return r }
+const passa = (req) => { let ok = false; const r = resposta(); exigirObra(req, r, () => { ok = true }); return ok || r.code }
+const leitor = { permissoes: new Set(['ver_valores']), usuarioId: ana } // vê valores, só a Casa
+assert.equal(passa({ ...leitor, path: `/api/obra/${casa}/fluxo` }), true)
+assert.equal(passa({ ...leitor, path: `/api/obra/${predio}/fluxo` }), 404)
+assert.equal(passa({ ...leitor, path: '/api/relatorios/pagamentos', query: {} }), 403)
+assert.equal(passa({ ...escr, path: '/api/relatorios/pagamentos', query: {} }), true)
 
 // 6. Sem ninguém ativo que cadastre usuários o sistema trava - a rota desfaz quando isso acontece.
 assert.ok(!semAdmin())

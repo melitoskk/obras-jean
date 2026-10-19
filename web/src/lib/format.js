@@ -71,6 +71,16 @@ export const hoje = () => new Date().toISOString().slice(0, 10)
 // e CSV levam só o número.
 export const numeroLancamento = (n) => (n == null ? '' : `Nº ${n}`)
 
+// Situação de uma conta em aberto (rodada 2, A28): vencida diz há quanto tempo - é o
+// que pede ação -, e a que vence hoje avisa. `hojeIso` vem de fora pra dar pra testar.
+export function vencimentoTxt(vencimento, hojeIso = hoje()) {
+  if (!vencimento) return { texto: 'Em aberto', vencida: false }
+  const dias = Math.round((Date.parse(hojeIso) - Date.parse(vencimento)) / 864e5)
+  if (dias > 0) return { texto: `Vencida há ${dias} ${dias === 1 ? 'dia' : 'dias'}`, vencida: true }
+  if (dias === 0) return { texto: 'Vence hoje', vencida: false }
+  return { texto: `Vence ${formatData(vencimento)}`, vencida: false }
+}
+
 export const formatData = (iso) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '')
 
 // "hoje" / "ontem" / "há N dias" - sublinha do combobox de fornecedor.

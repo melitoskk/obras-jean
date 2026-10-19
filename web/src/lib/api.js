@@ -104,6 +104,8 @@ const query = (filtros) => {
   return q.size ? `?${q}` : ''
 }
 export const getRelPagamentos = (filtros) => req('GET', `/api/relatorios/pagamentos${query(filtros)}`)
+// Contas a pagar (rodada 2, A5): sem obra, todas as que a pessoa vê.
+export const getContasAPagar = (filtros) => req('GET', `/api/relatorios/contas-a-pagar${query(filtros)}`)
 export const getRelEstimado = (obra) => req('GET', `/api/relatorios/estimado?obra=${obra}`)
 // Extrato da fase: sem `fase` vem só a obra e as fases dela (o combo).
 export const getRelExtratoFase = (filtros) => req('GET', `/api/relatorios/extrato-fase${query(filtros)}`)

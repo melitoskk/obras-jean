@@ -192,7 +192,7 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
       ]}
       // Do `obra` e não do rascunho `d`: é o número do banco, recarregado a cada
       // lançamento, e o rascunho não muda enquanto se digita o nome.
-      destaque={d.id && valores && <DestaqueSaldo saldo={obra?.saldo} caixa={obra?.caixa} aPagar={obra?.aPagar} aReceber={obra?.aReceber} taxaDevida={obra?.taxaDevida} />}
+      destaque={d.id && valores && <DestaqueSaldo obraId={d.id} saldo={obra?.saldo} caixa={obra?.caixa} aPagar={obra?.aPagar} aReceber={obra?.aReceber} taxaDevida={obra?.taxaDevida} />}
       faixa={faixa && <Faixa tipo={faixa.tipo} onFim={() => setFaixa(null)}>{faixa.texto}</Faixa>}
       // Fases, Orçamento e Fluxo têm Salvar PRÓPRIO (gravam fase/valor/lançamento, não
       // o cadastro); Diário e Galeria gravam ao registrar (rodada 2, A15). Dois

@@ -2,7 +2,7 @@ import { writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import express from 'express'
 import db from './db.js'
-import { login, logout, quemSou, exigirLogin, exigirPapel, obrasVisiveis, podeObra, podeEditarPost, podeEditarArquivo, podePasta, podeAnexo, pode } from './auth.js'
+import { login, logout, quemSou, exigirLogin, exigirPapel, exigirObra, obrasVisiveis, podeObra, podeEditarPost, podeEditarArquivo, podePasta, podeAnexo, pode } from './auth.js'
 import rotasOrcamento, { CUSTO } from './rotas/orcamento.js'
 import rotasFornecedor from './rotas/fornecedor.js'
 import rotasUsuario from './rotas/usuario.js'
@@ -26,6 +26,9 @@ app.use(exigirLogin)
 // Permissão (UPDATE.md §5): barra pela rota antes de qualquer handler. O recorte por
 // obra, por pasta e por autor fica nas rotas - `podeObra`, `podePasta` abaixo.
 app.use(exigirPapel)
+// Quem não vê todas as obras não alcança, por nenhuma rota, obra que não é dele.
+// `express.json` já rodou: a obra pode vir no corpo.
+app.use(exigirObra)
 
 // Módulo Orçamento em arquivo próprio - server.js já passava de 350 linhas.
 app.use(rotasOrcamento)

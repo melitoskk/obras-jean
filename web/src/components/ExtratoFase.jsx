@@ -9,7 +9,7 @@ import {
   criarSaida, patchSaida, excluirSaida, criarFornecedor, criarInsumo, patchInsumo,
   salvarVinculos, uploadAnexo,
 } from '../lib/api'
-import { formatMoeda, formatData } from '../lib/format'
+import { formatMoeda, formatData, vencimentoTxt } from '../lib/format'
 import { usePode } from '../lib/sessao'
 
 // Entradas e saídas de UMA fase na mesma lista, mais o botão que abre o lançamento.
@@ -101,7 +101,8 @@ export default function ExtratoFase({
             render: (l) => (
               l.tipo === 'entrada' ? null
                 : l.pago_em ? <Badge cor="sucesso">Paga</Badge>
-                : <Badge cor="aviso">{l.vencimento ? `Vence ${formatData(l.vencimento)}` : 'Em aberto'}</Badge>
+                // Vencida em vermelho, com há quantos dias (rodada 2, A28).
+                : ((v) => <Badge cor={v.vencida ? 'perigo' : 'aviso'}>{v.texto}</Badge>)(vencimentoTxt(l.vencimento))
             ),
           },
           {

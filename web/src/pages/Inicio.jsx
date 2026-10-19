@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Building2, Plus } from 'lucide-react'
+import { Users, Building2, Plus, Receipt } from 'lucide-react'
 import Tela from '../ui/Tela'
 import Grid from '../ui/Grid'
 import Barra from '../ui/Barra'
 import Botao from '../ui/Botao'
-import { getObras, getClientes } from '../lib/api'
-import { formatMoeda, pct, duracaoEntre, hoje } from '../lib/format'
+import { getObras, getClientes, getContasAPagar } from '../lib/api'
+import { usePode } from '../lib/sessao'
+import { formatMoeda, pct, duracaoEntre, hoje, vencimentoTxt } from '../lib/format'
 
 // Início é atalho, não dashboard. Gráfico e painel geral estão fora do escopo
 // (PROJETO-v2 §7) - aqui só as contagens que já existem, as obras que estão
@@ -16,11 +17,17 @@ export default function Inicio() {
   const navegar = useNavigate()
   const [obras, setObras] = useState([])
   const [clientes, setClientes] = useState([])
+  const [contas, setContas] = useState([])
+  // Clientes e Nova obra são de `cadastros` (19/10/2026); o Início, de quem vê valores.
+  const cadastra = usePode()('cadastros')
 
   useEffect(() => {
     getObras().then(setObras).catch(() => {})
-    getClientes().then(setClientes).catch(() => {})
-  }, [])
+    if (cadastra) getClientes().then(setClientes).catch(() => {})
+    getContasAPagar({}).then(setContas).catch(() => {})
+  }, [cadastra])
+  const vencidas = contas.filter((c) => vencimentoTxt(c.vencimento).vencida)
+  const somaDe = (ls) => ls.reduce((a, c) => a + c.valor, 0)
 
   // Mais consumida primeiro: quem está estourando o orçamento é quem precisa de olho.
   const ativas = obras
@@ -29,16 +36,25 @@ export default function Inicio() {
 
   return (
     <Tela titulo="Início">
-      <div className="grid max-w-2xl gap-2 pb-3 sm:grid-cols-2">
+      <div className="grid max-w-4xl gap-2 pb-3 sm:grid-cols-3">
         <Atalho icone={Building2} titulo="Obras" onClick={() => navegar('/obras')}>
           <b className="text-[22px] text-titulo">{ativas.length}</b> em andamento de {obras.length}
         </Atalho>
-        <Atalho icone={Users} titulo="Clientes" onClick={() => navegar('/clientes')}>
-          <b className="text-[22px] text-titulo">{clientes.length}</b> cadastrados
-          <div className="mt-1 text-[#777]">
-            {clientes.filter((c) => c.incompleto).length} com cadastro incompleto
+        {/* Contas a pagar de todas as obras (rodada 2, A5): o vencido primeiro, em vermelho. */}
+        <Atalho icone={Receipt} titulo="Contas a pagar" onClick={() => navegar('/relatorios?r=apagar')}>
+          <b className="text-[22px] text-laranja">R$ {formatMoeda(somaDe(contas))}</b> em {contas.length} conta(s)
+          <div className={`mt-1 ${vencidas.length ? 'font-semibold text-perigo' : 'text-[#777]'}`}>
+            {vencidas.length ? `${vencidas.length} vencida(s): R$ ${formatMoeda(somaDe(vencidas))}` : 'nenhuma vencida'}
           </div>
         </Atalho>
+        {cadastra && (
+          <Atalho icone={Users} titulo="Clientes" onClick={() => navegar('/clientes')}>
+            <b className="text-[22px] text-titulo">{clientes.length}</b> cadastrados
+            <div className="mt-1 text-[#777]">
+              {clientes.filter((c) => c.incompleto).length} com cadastro incompleto
+            </div>
+          </Atalho>
+        )}
       </div>
 
       <Grid
@@ -80,9 +96,11 @@ export default function Inicio() {
         ]}
       />
 
-      <div className="flex justify-end pt-2">
-        <Botao variante="acento" icone={Plus} onClick={() => navegar('/obras/nova')}>Nova obra</Botao>
-      </div>
+      {cadastra && (
+        <div className="flex justify-end pt-2">
+          <Botao variante="acento" icone={Plus} onClick={() => navegar('/obras/nova')}>Nova obra</Botao>
+        </div>
+      )}
     </Tela>
   )
 }

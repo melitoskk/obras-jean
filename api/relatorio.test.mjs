@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 const dir = mkdtempSync(join(tmpdir(), 'obras-'))
 process.env.OBRAS_DB = join(dir, 'teste.db')
 const { default: db, novoOrcamento } = await import('./db.js')
-const { pagamentos, estimadoRealizado, extratoFase, DIMENSOES, aReceberPrevisto, pendenteParaConcluir } = await import('./rotas/relatorio.js')
+const { pagamentos, estimadoRealizado, extratoFase, DIMENSOES, aReceberPrevisto, pendenteParaConcluir, contasAPagar } = await import('./rotas/relatorio.js')
 
 const ins = (sql, ...v) => Number(db.prepare(sql).run(...v).lastInsertRowid)
 const obra = ins("INSERT INTO obra (nome, criada_em) VALUES ('Casa', '2026-10-01')")
@@ -159,6 +159,24 @@ db.prepare("UPDATE fase SET concluida_em = '2026-10-05', taxa_tipo = 'pct', taxa
 assert.deepEqual((({ taxa_tipo, taxa_valor, taxa_devida }) => ({ taxa_tipo, taxa_valor, taxa_devida }))(extratoFase(obra, fund).fase),
   { taxa_tipo: 'pct', taxa_valor: 1000, taxa_devida: 200_00 })
 db.prepare('UPDATE fase SET concluida_em = NULL, taxa_tipo = NULL, taxa_valor = NULL WHERE id = ?').run(fund)
+
+// ── Contas a pagar (rodada 2, A5): o que está em aberto, por vencimento ──
+// Na fundação da Casa há a empreita de 5.000 sem vencimento; ponho mais duas com.
+const vence = (valor, vencimento) => {
+  const id = saida({ valor })
+  db.prepare('UPDATE saida SET vencimento = ? WHERE id = ?').run(vencimento, id)
+  return id
+}
+const cedo = vence(300_00, '2026-10-10')
+const tarde = vence(200_00, '2026-11-20')
+const ca = contasAPagar(null)
+// Com vencimento primeiro, do mais antigo; sem vencimento no fim. Paga não entra.
+assert.deepEqual(ca.map((c) => [c.valor, c.vencimento]), [[300_00, '2026-10-10'], [200_00, '2026-11-20'], [5_000_00, null]])
+assert.equal(ca[0].obra, 'Casa')
+assert.equal(ca[0].fornecedor ?? null, null)
+assert.deepEqual(contasAPagar(new Set([outra])), [], 'recorte por obra: o Sobrado está todo pago')
+assert.equal(contasAPagar(null, obra).length, 3, 'filtro de uma obra')
+db.prepare('DELETE FROM saida WHERE id IN (?, ?)').run(cedo, tarde)
 
 // ── Concluir a obra (Jean, 18/10/2026: impedir até tudo estar fechado) ──
 // A fundação está aberta e tem a empreita de 5.000 em aberto: duas pendências.

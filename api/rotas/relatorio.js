@@ -1,6 +1,7 @@
 import express from 'express'
 import db from '../db.js'
 import { CUSTO } from './orcamento.js'
+import { obrasVisiveis } from '../auth.js'
 
 // Relatórios operacionais do escritório (UPDATE.md §11.3, itens 1, 2, 4 e 5). O 3 - o
 // extrato do credor - já tem rota própria em fornecedor.js e a tela só o reaproveita.
@@ -74,6 +75,10 @@ function partesPor(sql, semNome, resto) {
   }
 }
 
+r.get('/api/relatorios/contas-a-pagar', (req, res) => {
+  res.json(contasAPagar(obrasVisiveis(req), obraDe(req)))
+})
+
 r.get('/api/relatorios/pagamentos', (req, res) => {
   const por = DIMENSOES.includes(req.query.por) ? req.query.por : 'fase'
   res.json(pagamentos({ por, obra: obraDe(req), de: dataDe(req.query.de), ate: dataDe(req.query.ate) }))
@@ -103,6 +108,20 @@ export function aReceberPrevisto(fases, taxaAdm, recebido, obraConcluida = false
     return a + custo + Math.round((custo * taxaAdm) / 10000)
   }, 0)
   return previsto - recebido
+}
+
+// Contas a pagar (rodada 2, A5): toda saída lançada sem o Pago, das obras que a pessoa
+// vê, do vencimento mais antigo pro mais novo e as sem vencimento no fim - é a ordem em
+// que se paga. `visiveis` é o Set de obrasVisiveis (null = todas); `obraId` filtra uma.
+export function contasAPagar(visiveis, obraId = null) {
+  return db.prepare(`
+    SELECT s.id, s.numero, s.data, s.vencimento, s.valor, s.descricao, s.pago_obs AS boleto,
+      f.obra_id, o.nome AS obra, f.codigo AS fase_codigo, f.nome AS fase, fo.nome AS fornecedor
+    FROM saida s JOIN fase f ON f.id = s.fase_id JOIN obra o ON o.id = f.obra_id
+    LEFT JOIN fornecedor fo ON fo.id = s.fornecedor_id
+    WHERE s.pago_em IS NULL AND (? IS NULL OR f.obra_id = ?)
+    ORDER BY s.vencimento IS NULL, s.vencimento, s.data, s.id
+  `).all(obraId, obraId).filter((c) => !visiveis || visiveis.has(c.obra_id))
 }
 
 // O que impede a obra de ser concluída (Jean, 18/10/2026: impedir até tudo estar

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { formatMoeda } from '../lib/format'
 
 // O número que se procura primeiro ao abrir a obra (UPDATE.md §11.1), em cima das
@@ -5,18 +6,23 @@ import { formatMoeda } from '../lib/format'
 // escrita embaixo, porque saldo e caixa usam as mesmas parcelas e trocar um pelo
 // outro dá um valor plausível e errado (o mesmo motivo de fluxo.test.mjs existir).
 // Saldo primeiro e maior: é a pergunta "a obra está no azul?".
-export default function DestaqueSaldo({ saldo = 0, caixa = 0, aPagar = 0, aReceber = 0, taxaDevida = 0 }) {
+export default function DestaqueSaldo({ obraId, saldo = 0, caixa = 0, aPagar = 0, aReceber = 0, taxaDevida = 0 }) {
   return (
     <div className="flex flex-wrap items-stretch gap-2 pb-2">
       <Indicador rotulo="Saldo" conta="entradas − tudo lançado" valor={saldo} grande />
       <Indicador rotulo="Caixa" conta="entradas − só o que foi pago" valor={caixa} />
       {/* A diferença entre os dois, quando existe: é ela que explica por que não batem. */}
+      {/* Clica e vê as contas, por vencimento (rodada 2, A5). */}
       {aPagar > 0 && (
-        <div className="flex min-w-[140px] flex-col justify-center border border-grade-linha bg-[#fdf6ea] px-3 py-1.5">
+        <Link
+          to={`/relatorios?r=apagar${obraId ? `&obra=${obraId}` : ''}`}
+          title="Ver as contas a pagar por vencimento"
+          className="flex min-w-[140px] flex-col justify-center border border-grade-linha bg-[#fdf6ea] px-3 py-1.5 hover:border-laranja"
+        >
           <span className="text-rotulo">A pagar</span>
           <b className="text-[17px] leading-tight tabular-nums text-laranja">R$ {formatMoeda(aPagar)}</b>
-          <span className="text-[11px] text-[#888]">lançado, ainda sem o Pago</span>
-        </div>
+          <span className="text-[11px] text-[#888]">lançado, ainda sem o Pago · ver contas</span>
+        </Link>
       )}
       {/* A taxa de administração já devida, das fases concluídas (Jean, 18/10/2026). */}
       {taxaDevida > 0 && (

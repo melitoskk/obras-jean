@@ -10,8 +10,8 @@ import Logo from '../ui/Logo'
 import EmptyState from '../ui/EmptyState'
 import { Input, Select, Radios } from '../ui/Form'
 import ExtratoCredor from '../components/ExtratoCredor'
-import { getObras, getFornecedores, getRelPagamentos, getRelEstimado, getRelExtratoFase } from '../lib/api'
-import { formatMoeda, formatPct, formatData, numeroLancamento, mult, pct, hoje } from '../lib/format'
+import { getObras, getFornecedores, getRelPagamentos, getContasAPagar, getRelEstimado, getRelExtratoFase } from '../lib/api'
+import { formatMoeda, formatPct, formatData, numeroLancamento, vencimentoTxt, mult, pct, hoje } from '../lib/format'
 
 // Relatórios do escritório (UPDATE.md §11.3, itens 1 a 5, e o extrato da fase, §11.4). Os enviáveis ao cliente
 // (6 e 7) ficam pra quando a visão do cliente (§12) e o MIV chegarem.
@@ -22,6 +22,7 @@ import { formatMoeda, formatPct, formatData, numeroLancamento, mult, pct, hoje }
 // então os dois níveis não têm como fechar totais diferentes.
 const RELATORIOS = [
   { id: 'pagamentos', label: 'Pagamentos' },
+  { id: 'apagar', label: 'Contas a pagar' },
   { id: 'estimado', label: 'Estimado × realizado' },
   { id: 'credor', label: 'Extrato do credor' },
   { id: 'adm', label: 'Taxa de administração' },
@@ -67,6 +68,7 @@ export default function Relatorios() {
       <Abas abas={RELATORIOS} ativa={r} onChange={setFiltro('r')} />
       <div className="flex min-h-0 flex-1 flex-col gap-2 pt-2">
         {r === 'pagamentos' && <Pagamentos {...comum} />}
+        {r === 'apagar' && <ContasAPagar {...comum} />}
         {r === 'estimado' && <EstimadoRealizado {...comum} />}
         {r === 'credor' && <Credor {...comum} />}
         {r === 'adm' && <Administracao {...comum} />}
@@ -196,6 +198,57 @@ function Pagamentos({ filtro, setFiltro, opcoesObra }) {
 
 // Carrega o estimado × realizado da obra do filtro. Usado pelo relatório 2 e pelo 5,
 // que é o mesmo payload com a taxa aplicada.
+// ── Contas a pagar (rodada 2, A5 e A28) ─────────────────────────────────────────────
+// O que foi lançado sem o Pago, de todas as obras ou de uma, na ordem em que se paga: do
+// vencimento mais antigo pro mais novo, e o que não tem vencimento no fim. Vencida em
+// vermelho, com há quantos dias. Pagar continua sendo marcar Pago no lançamento.
+function ContasAPagar({ filtro, setFiltro, opcoesObra }) {
+  const obra = filtro('obra')
+  const [contas, setContas] = useState(null)
+  useEffect(() => {
+    setContas(null)
+    getContasAPagar({ obra }).then(setContas).catch(() => setContas([]))
+  }, [obra])
+  const lista = contas ?? []
+  const soma = (ls) => ls.reduce((a, c) => a + c.valor, 0)
+  const vencidas = lista.filter((c) => vencimentoTxt(c.vencimento).vencida)
+  return (
+    <>
+      <Filtros>
+        <EscolhaObra vazio="Todas as obras" filtro={filtro} setFiltro={setFiltro} opcoesObra={opcoesObra} />
+        {vencidas.length > 0 && <Badge cor="perigo">{vencidas.length} vencida(s): R$ {formatMoeda(soma(vencidas))}</Badge>}
+      </Filtros>
+      <Grid
+        className="flex-1"
+        linhas={lista}
+        vazio={contas ? 'Nada a pagar.' : 'Carregando...'}
+        colunas={[
+          {
+            chave: 'vencimento', titulo: 'Vencimento', largura: 150,
+            render: (c) => {
+              const v = vencimentoTxt(c.vencimento)
+              return <span className={v.vencida ? 'font-semibold text-perigo' : ''}>{v.texto}</span>
+            },
+          },
+          ...(obra ? [] : [{ chave: 'obra', titulo: 'Obra', largura: 180, nowrap: false }]),
+          { chave: 'numero', titulo: 'Nº', largura: 50, align: 'right' },
+          { chave: 'data', titulo: 'Nota', largura: 85, render: (c) => formatData(c.data) },
+          { chave: 'fase', titulo: 'Fase', largura: 160, nowrap: false, render: (c) => `${c.fase_codigo ?? ''} - ${c.fase}` },
+          { chave: 'fornecedor', titulo: 'Fornecedor', largura: 160, nowrap: false, render: (c) => c.fornecedor ?? '' },
+          {
+            chave: 'descricao', titulo: 'Descrição', nowrap: false,
+            render: (c) => [c.descricao, c.boleto && `boleto ${c.boleto}`].filter(Boolean).join(' · '),
+          },
+          { chave: 'valor', titulo: 'Valor (R$)', largura: 110, align: 'right', render: (c) => formatMoeda(c.valor) },
+        ]}
+      />
+      <TotalGrid>
+        {lista.length} conta(s) · A pagar: <b>R$ {formatMoeda(soma(lista))}</b>
+      </TotalGrid>
+    </>
+  )
+}
+
 function useEstimado(obra) {
   const [dados, setDados] = useState(null)
   useEffect(() => {
@@ -489,7 +542,9 @@ function FolhaExtrato({ dados, totais }) {
               <td className={td}>
                 {l.historico}
                 {l.tipo === 'saida' && !l.pago_em && (
-                  <span className="text-laranja"> · em aberto{l.vencimento && `, vence ${formatData(l.vencimento)}`}</span>
+                  <span className={vencimentoTxt(l.vencimento).vencida ? 'text-perigo' : 'text-laranja'}>
+                    {' '}· em aberto{l.vencimento && `, ${vencimentoTxt(l.vencimento).texto.toLowerCase()}`}
+                  </span>
                 )}
               </td>
               <td className={`${td} text-right tabular-nums text-[#3d833d]`}>{l.tipo === 'entrada' && formatMoeda(l.valor)}</td>

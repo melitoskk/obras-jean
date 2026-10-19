@@ -250,6 +250,36 @@ export const podeObra = (req, obraId) => {
   const visiveis = obrasVisiveis(req)
   return !visiveis || visiveis.has(Number(obraId))
 }
+// De que obra é o pedido - pra quem não tem `todas_obras` (19/10/2026: com permissões
+// montadas, alguém pode ver valores sem ver todas as obras, e as rotas de dinheiro nunca
+// tinham precisado conferir obra). Devolve o id, null quando o pedido não é de uma obra
+// só, ou 'todas' quando é de várias (relatório sem filtro, extrato do credor).
+const obraDaFaseQ = db.prepare('SELECT obra_id FROM fase WHERE id = ?')
+const obraDoOrc = db.prepare('SELECT obra_id FROM orcamento WHERE id = ?')
+const obraDaSaidaQ = db.prepare('SELECT f.obra_id FROM saida s JOIN fase f ON f.id = s.fase_id WHERE s.id = ?')
+const obraDaEntrada = db.prepare('SELECT obra_id FROM entrada WHERE id = ?')
+export function obraDoPedido({ path, query = {}, body = {} }) {
+  let m
+  if ((m = path.match(/^\/api\/obras?\/(\d+)/))) return Number(m[1])
+  if (query.obra) return Number(query.obra)
+  if ((m = path.match(/^\/api\/orcamento\/(\d+)/))) return obraDoOrc.get(Number(m[1]))?.obra_id ?? null
+  if ((m = path.match(/^\/api\/fases\/(\d+)/))) return obraDaFaseQ.get(Number(m[1]))?.obra_id ?? null
+  if ((m = path.match(/^\/api\/saidas\/(\d+)/))) return obraDaSaidaQ.get(Number(m[1]))?.obra_id ?? null
+  if ((m = path.match(/^\/api\/entradas\/(\d+)/))) return obraDaEntrada.get(Number(m[1]))?.obra_id ?? null
+  if (body?.obra_id) return Number(body.obra_id)
+  if (body?.fase_id && /^\/api\/(saidas|entradas)$/.test(path)) return obraDaFaseQ.get(Number(body.fase_id))?.obra_id ?? null
+  if (/^\/api\/relatorios\/(?!contas-a-pagar)/.test(path) || /^\/api\/fornecedores\/\d+\/extrato/.test(path)) return 'todas'
+  return null
+}
+export function exigirObra(req, res, next) {
+  const visiveis = obrasVisiveis(req)
+  if (!visiveis) return next()
+  const obra = obraDoPedido(req)
+  if (obra === 'todas') return res.status(403).json({ erro: 'escolha uma obra' })
+  if (obra != null && !visiveis.has(obra)) return res.status(404).json({ erro: 'obra não encontrada' })
+  next()
+}
+
 // Post do diário e arquivo da Galeria: todos veem, mas edita e exclui o autor - ou quem
 // tem `editar_de_outros` (Dúvida 20; Jean, 19/10/2026, também pros arquivos).
 export const podeEditarPost = (req, post) => pode(req, 'editar_de_outros') || post.autor_id === req.usuarioId
