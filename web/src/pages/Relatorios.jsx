@@ -132,7 +132,7 @@ function Pagamentos({ filtro, setFiltro, opcoesObra }) {
     { key: g.grupo, nivel: 0, temFilhos: analitico, rotulo: g.grupo, lancado: g.lancado, pago: g.pago, parte: pct(g.lancado, total.lancado) },
     ...(analitico ? g.itens.map((l, i) => ({
       key: `${g.grupo}-${l.id}-${i}`, nivel: 1, lanc: l,
-      rotulo: [numeroLancamento('saida', l.numero), l.descricao].filter(Boolean).join(' · '),
+      rotulo: [numeroLancamento(l.numero), l.descricao].filter(Boolean).join(' · '),
       lancado: l.valor, pago: l.pago ? l.valor : 0,
     })) : []),
   ])
@@ -236,7 +236,7 @@ function EstimadoRealizado({ filtro, setFiltro, opcoesObra }) {
       },
       ...s.lancamentos.map((l) => ({
         key: `f${f.id}-s${s.chave}-l${l.id}`, nivel: 2, lancamento: true, data: l.data,
-        rotulo: [numeroLancamento('saida', l.numero), l.descricao].filter(Boolean).join(' · '), realizado: l.valor,
+        rotulo: [numeroLancamento(l.numero), l.descricao].filter(Boolean).join(' · '), realizado: l.valor,
       })),
     ]) : []),
   ])
@@ -485,7 +485,7 @@ function FolhaExtrato({ dados, totais }) {
           {lancamentos.map((l) => (
             <tr key={`${l.tipo}${l.id}`} className="break-inside-avoid">
               <td className={`${td} tabular-nums`}>{formatData(l.data)}</td>
-              <td className={`${td} tabular-nums`}>{numeroLancamento(l.tipo, l.numero)}</td>
+              <td className={`${td} tabular-nums`}>{l.numero}</td>
               <td className={td}>
                 {l.historico}
                 {l.tipo === 'saida' && !l.pago_em && (

@@ -19,8 +19,3 @@ export function enviarCsv(res, nome, cabecalho, linhas) {
     `attachment; filename="${ascii}.csv"; filename*=UTF-8''${encodeURIComponent(`${nome}.csv`)}`)
   res.send('﻿' + csv) // BOM explícito: sem ele o Excel-BR come os acentos
 }
-
-// `S-000412` - o número do lançamento como se cita (UPDATE.md §9). Mesmo formato de
-// numeroLancamento em web/src/lib/format.js; os CSVs são o único lugar do servidor que o escreve.
-export const numeroLancamento = (tipo, n) =>
-  n == null ? '' : `${tipo === 'entrada' ? 'E' : 'S'}-${String(n).padStart(6, '0')}`

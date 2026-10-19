@@ -424,46 +424,69 @@ for (const [t, n] of [['entrada', '2*id-2'], ['saida', '2*id-1']]) {
   }
 }
 
-// Número do lançamento (UPDATE.md §9): `E-000231` / `S-000412`. Prefixo por tipo, um
-// contador por tabela - entrada e saída já são tabelas separadas, e o prefixo é o que
-// tira a colisão sem contador compartilhado.
+// Número do lançamento (UPDATE.md §9). POR OBRA, entrada e saída na mesma sequência
+// (Jean, 19/10/2026): uma pasta física de comprovantes por obra, e o Nº 2 é o 2º papel
+// dela. Substituiu o `E-000231` / `S-000412` global por tipo (03/10/2026).
 //
 // Não é o `id`: SQLite sem AUTOINCREMENT reaproveita o maior id quando a última linha
-// é excluída, e número citado ("confere o 0412") não pode voltar a existir com outra
-// nota. O contador mora em `sequencia` e só anda pra frente. Quem numera é TRIGGER, não
-// a rota: todo INSERT (servidor, semear.js, testes) sai numerado sem saber disso.
+// é excluída, e número citado ("confere o Nº 12") não pode voltar a existir com outra
+// nota. O contador mora em `sequencia` (`obra:<id>`) e só anda pra frente. Quem numera é
+// TRIGGER, não a rota: todo INSERT (servidor, semear.js, testes) sai numerado sem saber.
+// A obra da saída vem da fase - por isso a saída não troca de obra (server.js).
 db.exec(`
   CREATE TABLE IF NOT EXISTS sequencia (
     nome TEXT PRIMARY KEY, ultimo INTEGER NOT NULL DEFAULT 0
   ) WITHOUT ROWID;
 `)
 
-// Numera tudo de novo, 1..n na ordem de lançamento, e acerta o contador. É a migração
-// de quem já tinha lançamento e o fim do semear.js (que insere fora de ordem). Fora
-// desses dois, NUNCA: renumerar o que alguém já citou é exatamente o que o número evita.
-export function renumerar(t) {
-  db.exec(`UPDATE ${t} SET numero = NULL`) // antes, senão o índice único colide no meio
-  const ids = db.prepare(`SELECT id FROM ${t} ORDER BY criado_em, id`).all()
-  const up = db.prepare(`UPDATE ${t} SET numero = ? WHERE id = ?`)
-  ids.forEach((l, i) => up.run(i + 1, l.id))
-  db.prepare('INSERT INTO sequencia (nome, ultimo) VALUES (?,?) ON CONFLICT(nome) DO UPDATE SET ultimo = excluded.ultimo')
-    .run(t, ids.length)
+// Numera tudo de novo, 1..n por obra na ordem de lançamento, e acerta os contadores. É
+// a migração e o fim do semear.js (que insere fora de ordem). Fora desses dois, NUNCA:
+// renumerar o que já está escrito na pasta é exatamente o que o número evita.
+export function renumerarObras() {
+  db.exec('UPDATE entrada SET numero = NULL; UPDATE saida SET numero = NULL')
+  const lancs = db.prepare(`
+    SELECT 'entrada' AS t, id, obra_id, criado_em FROM entrada
+    UNION ALL
+    SELECT 'saida', s.id, f.obra_id, s.criado_em FROM saida s JOIN fase f ON f.id = s.fase_id
+    ORDER BY obra_id, criado_em, id
+  `).all()
+  const up = { entrada: db.prepare('UPDATE entrada SET numero = ? WHERE id = ?'), saida: db.prepare('UPDATE saida SET numero = ? WHERE id = ?') }
+  const ultimo = new Map()
+  for (const l of lancs) {
+    const n = (ultimo.get(l.obra_id) ?? 0) + 1
+    ultimo.set(l.obra_id, n)
+    up[l.t].run(n, l.id)
+  }
+  db.exec("DELETE FROM sequencia WHERE nome IN ('entrada', 'saida') OR nome LIKE 'obra:%'")
+  const seq = db.prepare('INSERT INTO sequencia (nome, ultimo) VALUES (?,?)')
+  for (const [obra, n] of ultimo) seq.run(`obra:${obra}`, n)
 }
 
 for (const t of ['entrada', 'saida']) {
   if (!db.prepare(`PRAGMA table_info(${t})`).all().some((c) => c.name === 'numero')) {
     db.exec(`ALTER TABLE ${t} ADD COLUMN numero INTEGER`)
-    renumerar(t)
   }
+}
+// Migração da numeração global por tipo (índice único por tabela, trigger `<t>_numerar`)
+// pra por obra: o número repete entre obras, então o índice deixa de ser único.
+const temTrigger = (nome) => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name = ?").get(nome)
+if (!temTrigger('entrada_numerar_obra')) {
   db.exec(`
-    CREATE UNIQUE INDEX IF NOT EXISTS ${t}_numero ON ${t}(numero);
-    CREATE TRIGGER IF NOT EXISTS ${t}_numerar AFTER INSERT ON ${t} WHEN NEW.numero IS NULL
-    BEGIN
-      INSERT OR IGNORE INTO sequencia (nome, ultimo) VALUES ('${t}', 0);
-      UPDATE sequencia SET ultimo = ultimo + 1 WHERE nome = '${t}';
-      UPDATE ${t} SET numero = (SELECT ultimo FROM sequencia WHERE nome = '${t}') WHERE id = NEW.id;
-    END;
+    DROP TRIGGER IF EXISTS entrada_numerar; DROP TRIGGER IF EXISTS saida_numerar;
+    DROP INDEX IF EXISTS entrada_numero; DROP INDEX IF EXISTS saida_numero;
   `)
+  renumerarObras()
+  const obraDe = { entrada: 'NEW.obra_id', saida: '(SELECT obra_id FROM fase WHERE id = NEW.fase_id)' }
+  for (const t of ['saida', 'entrada']) {
+    db.exec(`
+      CREATE TRIGGER ${t}_numerar_obra AFTER INSERT ON ${t} WHEN NEW.numero IS NULL
+      BEGIN
+        INSERT OR IGNORE INTO sequencia (nome, ultimo) VALUES ('obra:' || ${obraDe[t]}, 0);
+        UPDATE sequencia SET ultimo = ultimo + 1 WHERE nome = 'obra:' || ${obraDe[t]};
+        UPDATE ${t} SET numero = (SELECT ultimo FROM sequencia WHERE nome = 'obra:' || ${obraDe[t]}) WHERE id = NEW.id;
+      END;
+    `)
+  }
 }
 
 // Serviço do lançamento (UPDATE.md §6). Aponta pro serviço DE CATÁLOGO, não pro da

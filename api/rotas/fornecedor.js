@@ -1,6 +1,6 @@
 import express from 'express'
 import db from '../db.js'
-import { enviarCsv, reais, numeroLancamento } from '../csv.js'
+import { enviarCsv, reais } from '../csv.js'
 
 // Extrato do credor (UPDATE.md §10.2): tudo que foi lançado pra um fornecedor, em todas
 // as obras. É o documento que se manda pro credor conferir - por isso leva número do
@@ -49,7 +49,7 @@ r.get('/api/fornecedores/:id/extrato.csv', (req, res) => {
   const pago = soma(linhas.filter((l) => l.pago_em))
   // Comprovante vai como nome do arquivo: o CSV não abre anexo, mas diz qual pedir.
   const corpo = linhas.map((l) => [
-    numeroLancamento('saida', l.numero), l.data, l.obra,
+    l.numero ?? '', l.data, l.obra,
     [`${l.fase_codigo} - ${l.fase}`, l.servico && `${l.fase_codigo}.${l.servico_codigo} ${l.servico}`]
       .filter(Boolean).join(' / '),
     [...l.itens, l.descricao].filter(Boolean).join(' · '),

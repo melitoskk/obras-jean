@@ -9,7 +9,7 @@ import {
   criarSaida, patchSaida, excluirSaida, criarFornecedor, criarInsumo, patchInsumo,
   salvarVinculos, uploadAnexo,
 } from '../lib/api'
-import { formatMoeda, formatData, numeroLancamento } from '../lib/format'
+import { formatMoeda, formatData } from '../lib/format'
 
 // Entradas e saídas de UMA fase na mesma lista, mais o botão que abre o lançamento.
 // Vive aqui porque duas telas mostram exatamente isto: Previsto × Realizado (dentro
@@ -76,7 +76,7 @@ export default function ExtratoFase({
         colunas={[
           {
             chave: 'numero', titulo: 'Nº', largura: 82,
-            render: (l) => <span className="tabular-nums">{numeroLancamento(l.tipo, l.numero)}</span>,
+            render: (l) => <span className="tabular-nums">{l.numero}</span>,
           },
           { chave: 'data', titulo: 'Data', largura: 84, render: (l) => formatData(l.data) },
           {

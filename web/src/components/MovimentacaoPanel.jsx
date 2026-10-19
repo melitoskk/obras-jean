@@ -180,7 +180,7 @@ export default function MovimentacaoPanel({
       titulo={
         <span className="flex flex-wrap items-center gap-2">
           {edicao
-            ? `Editar ${tipo === 'entrada' ? 'entrada' : 'saída'} ${numeroLancamento(tipo, mov.numero)}`
+            ? `Editar ${tipo === 'entrada' ? 'entrada' : 'saída'} ${numeroLancamento(mov.numero)}`
             : 'Registrar lançamento'}
           {tipo === 'saida' &&
             (pagoEm ? <Badge cor="sucesso">Paga</Badge> : <Badge cor="aviso">Em aberto</Badge>)}

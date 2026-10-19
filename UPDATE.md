@@ -432,6 +432,7 @@ lançamento 0412").
   `orcamento.numero` já é o jeito da casa.
 - Número **não se reaproveita** quando o lançamento é excluído.
 - *Decidido em 03/10/2026:* prefixo, `E-000231` / `S-000412` (6 dígitos). Coluna `numero` em `entrada` e `saida`, preenchida por **trigger** a partir da tabela `sequencia`, que só anda pra frente - não é o `id`, que o SQLite reaproveita quando a última linha é excluída. Lançamentos existentes foram numerados na ordem de `criado_em`; `semear.js --limpar` zera o contador. Aparece no extrato da fase (coluna `Nº`), no título do painel ao editar e no CSV da obra. Extrato do fornecedor e relatórios ainda não existem: levam o número quando forem feitos (§10.2, §11.3).
+- *Mudado em 19/10/2026 (Jean):* **por obra, entrada e saída na mesma sequência**, para bater com a pasta física de comprovantes de cada obra (o Nº 2 é o 2º papel da pasta). Contador `obra:<id>` em `sequencia`, mesmo trigger, só anda pra frente; a saída não troca de obra. A migração renumerou uma vez, por obra, na ordem de `criado_em`. No texto aparece `Nº 12`; na coluna Nº e no CSV, só o número.
 
 ---
 

@@ -5,7 +5,7 @@ import Botao from '../ui/Botao'
 import Badge from '../ui/Badge'
 import { Select } from '../ui/Form'
 import { getExtratoCredor } from '../lib/api'
-import { formatMoeda, formatData, numeroLancamento, hoje } from '../lib/format'
+import { formatMoeda, formatData, hoje } from '../lib/format'
 
 // Extrato do credor (UPDATE.md §10.2): tudo que foi lançado pra ele, em todas as obras,
 // com o comprovante de cada linha. É o que se manda pro credor conferir - daí o CSV.
@@ -52,7 +52,7 @@ export default function ExtratoCredor({ fornecedorId }) {
         colunas={[
           {
             chave: 'numero', titulo: 'Nº', largura: 82,
-            render: (l) => <span className="tabular-nums">{numeroLancamento('saida', l.numero)}</span>,
+            render: (l) => <span className="tabular-nums">{l.numero}</span>,
           },
           { chave: 'data', titulo: 'Data', largura: 80, render: (l) => formatData(l.data) },
           { chave: 'obra', titulo: 'Obra', largura: 150, nowrap: false },

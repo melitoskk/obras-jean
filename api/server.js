@@ -8,7 +8,7 @@ import rotasFornecedor from './rotas/fornecedor.js'
 import rotasUsuario from './rotas/usuario.js'
 import rotasRelatorio, { aReceberPrevisto, taxaDevida, pendenteParaConcluir } from './rotas/relatorio.js'
 import rotasVisao from './rotas/visao.js'
-import { enviarCsv, reais, numeroLancamento } from './csv.js'
+import { enviarCsv, reais } from './csv.js'
 
 // Anexos ficam no mesmo volume do .db - backup continua sendo copiar /data.
 const ANEXOS = process.env.ANEXOS_DIR || '/data/anexos'
@@ -247,9 +247,9 @@ app.get('/api/obra/:id/export.csv', (req, res) => {
      WHERE f.obra_id = ?`,
   ).all(id)
   const linhas = [
-    ...entradas.map((e) => [numeroLancamento('entrada', e.numero), 'Entrada', e.data, e.fase || '', '',
+    ...entradas.map((e) => [e.numero ?? '', 'Entrada', e.data, e.fase || '', '',
       e.descricao, reais(e.valor), '', 'Recebida']),
-    ...saidas.map((s) => [numeroLancamento('saida', s.numero), 'Saída', s.data, s.fase, s.servico ?? '',
+    ...saidas.map((s) => [s.numero ?? '', 'Saída', s.data, s.fase, s.servico ?? '',
       s.descricao, reais(s.valor), s.vencimento ?? '', s.pago_em ? `Paga em ${s.pago_em}` : 'Em aberto']),
   ].sort((a, b) => a[2].localeCompare(b[2]))
   enviarCsv(res, obra.nome,
@@ -387,8 +387,15 @@ app.post('/api/saidas', (req, res) => {
   if (servicoInvalido(req.body)) return res.status(400).json({ erro: 'serviço não é desta fase' })
   res.json({ id: escreverSaida(req.body, null) })
 })
+// A saída não muda de obra: o número dela é da sequência da obra (§9, pasta física).
+const obraDaSaida = db.prepare('SELECT f.obra_id FROM saida s JOIN fase f ON f.id = s.fase_id WHERE s.id = ?')
+const obraDaFase = db.prepare('SELECT obra_id FROM fase WHERE id = ?')
 app.patch('/api/saidas/:id', (req, res) => {
   if (servicoInvalido(req.body)) return res.status(400).json({ erro: 'serviço não é desta fase' })
+  const de = obraDaSaida.get(Number(req.params.id))?.obra_id
+  if ('fase_id' in req.body && de != null && obraDaFase.get(req.body.fase_id)?.obra_id !== de) {
+    return res.status(400).json({ erro: 'a fase não é desta obra' })
+  }
   res.json({ id: escreverSaida(req.body, Number(req.params.id)) })
 })
 app.delete('/api/saidas/:id', (req, res) => {

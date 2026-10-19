@@ -1,6 +1,6 @@
-// Rastreabilidade do lançamento (UPDATE.md §6 e §9). O número é citado fora do sistema
-// ("confere o S-000412"): se ele se repetir depois de uma exclusão, a conversa passa a
-// falar de outra nota sem ninguém perceber. E o serviço do lançamento é o de CATÁLOGO -
+// Rastreabilidade do lançamento (UPDATE.md §6 e §9). O número é o do comprovante na
+// pasta física da obra ("o Nº 2 é o 2º papel da pasta"): se ele se repetir depois de uma
+// exclusão, a pasta passa a falar de outra nota sem ninguém perceber. E o serviço do lançamento é o de CATÁLOGO -
 // se ele seguisse a versão, arquivar a estimativa arrancaria o realizado do serviço.
 //
 //   docker compose run --rm api node --experimental-sqlite lancamento.test.mjs
@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os'
 
 const dir = mkdtempSync(join(tmpdir(), 'obras-'))
 process.env.OBRAS_DB = join(dir, 'teste.db')
-const { default: db, novoOrcamento, renumerar } = await import('./db.js')
+const { default: db, novoOrcamento, renumerarObras } = await import('./db.js')
 const { caixaDaObra } = await import('./rotas/orcamento.js')
 
 const obraId = Number(
@@ -36,22 +36,31 @@ const entrada = () => Number(
 )
 const numero = (tabela, id) => db.prepare(`SELECT numero FROM ${tabela} WHERE id = ?`).get(id).numero
 
-// --- §9: número sequencial, por tipo, sem reaproveitar ---
+// --- §9: número sequencial POR OBRA, entrada e saída na mesma sequência (Jean,
+// 19/10/2026: uma pasta física por obra, o Nº 2 é o 2º comprovante dela) ---
+const outraObra = Number(db.prepare("INSERT INTO obra (nome, criada_em) VALUES ('Sobrado', '2026-10-03')").run().lastInsertRowid)
+const faseOutra = Number(db.prepare('INSERT INTO fase (obra_id, catalogo_id, codigo, nome, ordem) VALUES (?,?,?,?,?)')
+  .run(outraObra, fc.id, fc.codigo, fc.nome, fc.codigo).lastInsertRowid)
+const saidaEm = (f) => Number(db.prepare("INSERT INTO saida (fase_id, valor, data, criado_em) VALUES (?,100,'2026-10-03',?)")
+  .run(f, instante()).lastInsertRowid)
+
 const s1 = saida()
-const s2 = saida()
 const e1 = entrada()
-assert.deepEqual([numero('saida', s1), numero('saida', s2)], [1, 2], 'saída numera 1, 2...')
-assert.equal(numero('entrada', e1), 1, 'entrada tem o seu contador - o prefixo E-/S- tira a colisão')
+const s2 = saida()
+assert.deepEqual([numero('saida', s1), numero('entrada', e1), numero('saida', s2)], [1, 2, 3],
+  'entrada e saída na mesma sequência, na ordem em que foram lançadas')
+assert.equal(numero('saida', saidaEm(faseOutra)), 1, 'outra obra começa no 1')
 
 db.prepare('DELETE FROM saida WHERE id = ?').run(s2)
 const s3 = saida()
 // SQLite sem AUTOINCREMENT devolve o mesmo id aqui. O número não pode ir junto.
-assert.equal(numero('saida', s3), 3, 'excluir a última saída não devolve o número dela')
+assert.equal(numero('saida', s3), 4, 'excluir o último lançamento não devolve o número dele')
 
-// Renumerar é a migração / o fim da semente: ordem de lançamento, contador acertado.
-renumerar('saida')
-assert.deepEqual([numero('saida', s1), numero('saida', s3)], [1, 2])
-assert.equal(numero('saida', saida()), 3, 'depois de renumerar, o próximo segue do fim')
+// Renumerar é a migração / o fim da semente: por obra, na ordem de lançamento, contador acertado.
+renumerarObras()
+assert.deepEqual([numero('saida', s1), numero('entrada', e1), numero('saida', s3)], [1, 2, 3])
+assert.equal(numero('entrada', entrada()), 4, 'depois de renumerar, o próximo segue do fim')
+assert.equal(numero('saida', saidaEm(faseOutra)), 2)
 
 // --- §6: serviço de catálogo atravessa versões ---
 const orcId = novoOrcamento(obraId)

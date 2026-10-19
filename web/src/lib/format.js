@@ -66,10 +66,10 @@ export const mult = (qtd, centavos) => round((qtd ?? 0) * (centavos ?? 0))
 // Datas em ISO (YYYY-MM-DD) no estado; só formata na exibição.
 export const hoje = () => new Date().toISOString().slice(0, 10)
 
-// `S-000412` - o número do lançamento como se cita (UPDATE.md §9). Prefixo por tipo
-// porque entrada e saída têm contadores separados; 6 dígitos como o da estimativa.
-export const numeroLancamento = (tipo, n) =>
-  n == null ? '' : `${tipo === 'entrada' ? 'E' : 'S'}-${String(n).padStart(6, '0')}`
+// `Nº 12` - o número do lançamento como se cita no texto (UPDATE.md §9): por obra, entrada
+// e saída na mesma sequência, o mesmo do comprovante na pasta física da obra. Coluna "Nº"
+// e CSV levam só o número.
+export const numeroLancamento = (n) => (n == null ? '' : `Nº ${n}`)
 
 export const formatData = (iso) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '')
 

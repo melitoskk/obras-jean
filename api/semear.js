@@ -10,7 +10,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { deflateSync } from 'node:zlib'
-import db, { novoOrcamento, renumerar } from './db.js'
+import db, { novoOrcamento, renumerarObras } from './db.js'
 import { CATALOGO } from './catalogo.js'
 
 const ANEXOS = process.env.ANEXOS_DIR || '/data/anexos'
@@ -121,8 +121,8 @@ if (process.argv.includes('--limpar')) {
   // já dá hoje. Disco é barato; varrer arquivo é o que estraga o dia de alguém.
   db.exec('PRAGMA foreign_keys = OFF')
   for (const t of TABELAS) db.exec(`DELETE FROM ${t}`)
-  // O contador do número do lançamento volta junto: demo nova começa em E-000001.
-  db.exec("DELETE FROM sequencia WHERE nome IN ('entrada', 'saida')")
+  // O contador do número do lançamento volta junto: cada obra da demo começa no Nº 1.
+  db.exec("DELETE FROM sequencia WHERE nome IN ('entrada', 'saida') OR nome LIKE 'obra:%'")
   db.exec('PRAGMA foreign_keys = ON')
   console.log('banco limpo (catálogo, insumos e usuários preservados)')
 } else if (db.prepare('SELECT COUNT(*) n FROM obra').get().n) {
@@ -603,8 +603,7 @@ for (const o of obras) {
 
 // As obras se semeiam uma depois da outra, cada uma com datas do seu período: o
 // trigger numerou na ordem de INSERÇÃO, não na de lançamento. Renumera pela ordem real.
-renumerar('entrada')
-renumerar('saida')
+renumerarObras()
 
 db.exec('COMMIT')
 
