@@ -43,7 +43,7 @@ export function normalizar(lista) {
 db.exec('CREATE TABLE IF NOT EXISTS usuario (id INTEGER PRIMARY KEY, nome TEXT NOT NULL UNIQUE, senha TEXT NOT NULL)')
 // ALTER idempotente. O DEFAULT 'admin' só vale pras linhas que já existiam: até aqui
 // quem entrava podia tudo, e o banco existente continua assim. Usuário novo sempre
-// nasce com papel explícito (rotas/usuario.js).
+// nasce com papel explícito (rotas/usuario.js, criar-usuario.js).
 {
   const tem = new Set(db.prepare('PRAGMA table_info(usuario)').all().map((c) => c.name))
   if (!tem.has('papel')) {
