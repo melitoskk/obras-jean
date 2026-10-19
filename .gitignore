@@ -1,4 +1,12 @@
+# Dependências e build
 node_modules/
 web/dist/
-validacao/capturas/
+
+# Configuração local (o modelo versionado é o .env.example)
 .env
+
+# Material de apoio que fica só na máquina
+*.md
+!.claude/**/*.md
+obra_prima_referencias/
+validacao/
