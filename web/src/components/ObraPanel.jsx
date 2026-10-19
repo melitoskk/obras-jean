@@ -20,7 +20,7 @@ import {
   getOrcamentos, getOrcamento, criarOrcamento,
 } from '../lib/api'
 import { duracaoEntre, plural } from '../lib/format'
-import { useSessao } from '../lib/sessao'
+import { usePode } from '../lib/sessao'
 
 // Cadastro de obra - Obra-Prima-Cadastro-Obra.png. `obra` nulo = criar.
 // Dia a dia e Galeria ficam desabilitadas ENQUANTO a obra não tem id: não há onde
@@ -44,10 +44,13 @@ const OPCOES_SITUACAO = Object.entries(SITUACOES).map(([valor, { label }]) => ({
 // obras - quem tem a lista (a página) recarrega. Não é `onSalvo`: no modal de nova
 // obra, onSalvo fecha o modal.
 export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCaixaMudou, onClienteCriado, pagina }) {
-  // Campo (UPDATE.md §5, Dúvida 9) vê só Diário de obra e Galeria: sem cadastro, sem
-  // estimativa, sem fluxo e sem o saldo do topo. A API recusa o resto de todo jeito.
-  const soCampo = useSessao().papel === 'campo'
-  const [aba, setAba] = useState(soCampo ? 'diario' : 'dados')
+  // Cada aba é de uma permissão (UPDATE.md §5, 19/10/2026): Dados e Endereço de
+  // `cadastros`, Fases de `estimativa`, Estimativa, Fluxo, Visão do cliente e o saldo do
+  // topo de `ver_valores`. Diário e Galeria todo mundo vê. A API recusa o resto de todo jeito.
+  const pode = usePode()
+  const cadastra = pode('cadastros')
+  const valores = pode('ver_valores')
+  const [aba, setAba] = useState(cadastra ? 'dados' : 'diario')
   // O rascunho é o que o botão `+` do cliente deixou guardado antes de sair daqui.
   // Lê-e-apaga: só vale pra viagem de volta, não pra "nova obra" de meia hora depois.
   const [d, setD] = useState(() => {
@@ -168,33 +171,35 @@ export default function ObraPanel({ obra, clientes = [], onFechar, onSalvo, onCa
       aba={aba}
       onAba={setAba}
       abas={[
-        ...(soCampo ? [] : [
+        ...(cadastra ? [
           { id: 'dados', label: 'Dados' },
           { id: 'endereco', label: 'Endereço' },
-          // Do que a obra é feita. A árvore de catálogo (21 fases × 103 serviços) não cabe
-          // aqui dentro e painel sobre painel é proibido - então esta aba MOSTRA as fases
-          // e leva pra tela grande, criando o orçamento sozinho se ainda não houver.
-          { id: 'fases', label: 'Fases', disabled: !d.id },
+        ] : []),
+        // Do que a obra é feita. A árvore de catálogo (21 fases × 103 serviços) não cabe
+        // aqui dentro e painel sobre painel é proibido - então esta aba MOSTRA as fases
+        // e leva pra tela grande, criando o orçamento sozinho se ainda não houver.
+        ...(pode('estimativa') ? [{ id: 'fases', label: 'Fases', disabled: !d.id }] : []),
+        ...(valores ? [
           { id: 'orcamento', label: 'Estimativa', disabled: !d.id },
           { id: 'fluxo', label: 'Fluxo de caixa', disabled: !d.id },
           // A tela de mesa com o cliente (UPDATE.md §12): aba do escritório, sem login de
-          // cliente. Fora do campo - é toda feita de valores.
+          // cliente. Toda feita de valores.
           { id: 'cliente', label: 'Visão do cliente', disabled: !d.id },
-        ]),
+        ] : []),
         // Só existem depois que a obra existe - não dá pra anexar foto ao nada.
         { id: 'diario', label: 'Diário de obra', disabled: !d.id },
         { id: 'galeria', label: 'Galeria', disabled: !d.id },
       ]}
       // Do `obra` e não do rascunho `d`: é o número do banco, recarregado a cada
       // lançamento, e o rascunho não muda enquanto se digita o nome.
-      destaque={d.id && !soCampo && <DestaqueSaldo saldo={obra?.saldo} caixa={obra?.caixa} aPagar={obra?.aPagar} aReceber={obra?.aReceber} taxaDevida={obra?.taxaDevida} />}
+      destaque={d.id && valores && <DestaqueSaldo saldo={obra?.saldo} caixa={obra?.caixa} aPagar={obra?.aPagar} aReceber={obra?.aReceber} taxaDevida={obra?.taxaDevida} />}
       faixa={faixa && <Faixa tipo={faixa.tipo} onFim={() => setFaixa(null)}>{faixa.texto}</Faixa>}
       // Fases, Orçamento e Fluxo têm Salvar PRÓPRIO (gravam fase/valor/lançamento, não
       // o cadastro); Diário e Galeria gravam ao registrar (rodada 2, A15). Dois
       // botões "Salvar" na mesma tela é o que fez o primeiro teste falhar: clica-se no
       // do rodapé, que gravava só nome e endereço, e a seleção ia pro lixo.
       acoes={
-        soCampo || ['fases', 'orcamento', 'fluxo', 'cliente', 'diario', 'galeria'].includes(aba) ? null : (
+        !cadastra || ['fases', 'orcamento', 'fluxo', 'cliente', 'diario', 'galeria'].includes(aba) ? null : (
           <BarraAcao>
             <Botao variante="acento" icone={Save} onClick={salvar} disabled={salvando}>Salvar</Botao>
           </BarraAcao>

@@ -2,7 +2,7 @@ import { writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import express from 'express'
 import db from './db.js'
-import { login, logout, quemSou, exigirLogin, exigirPapel, obrasVisiveis, podeObra, podeEditarPost, podeAnexo } from './auth.js'
+import { login, logout, quemSou, exigirLogin, exigirPapel, obrasVisiveis, podeObra, podeEditarPost, podeEditarArquivo, podePasta, podeAnexo, pode } from './auth.js'
 import rotasOrcamento, { CUSTO } from './rotas/orcamento.js'
 import rotasFornecedor from './rotas/fornecedor.js'
 import rotasUsuario from './rotas/usuario.js'
@@ -22,8 +22,8 @@ app.post('/api/login', login)
 app.post('/api/logout', logout)
 app.get('/api/eu', quemSou)
 app.use(exigirLogin)
-// Papel (UPDATE.md §5): barra pela rota antes de qualquer handler. O recorte por obra
-// do papel campo fica nas rotas que ele alcança - `podeObra` abaixo.
+// Permissão (UPDATE.md §5): barra pela rota antes de qualquer handler. O recorte por
+// obra, por pasta e por autor fica nas rotas - `podeObra`, `podePasta` abaixo.
 app.use(exigirPapel)
 
 // Módulo Orçamento em arquivo próprio - server.js já passava de 350 linhas.
@@ -59,7 +59,8 @@ app.get('/api/obras', (req, res) => {
   // Campo: só as obras atribuídas e sem nenhum número - `o.*` é cadastro, o dinheiro
   // são as somas aqui de baixo, que ele não recebe (Dúvida 9).
   const visiveis = obrasVisiveis(req)
-  if (visiveis) return res.json(obras.filter((o) => visiveis.has(o.id)))
+  const lista = visiveis ? obras.filter((o) => visiveis.has(o.id)) : obras
+  if (!pode(req, 'ver_valores')) return res.json(lista)
   // O orçado da fase é a soma dos SERVIÇOS dela - mesma fórmula (CUSTO) do módulo
   // Orçamento, importada em vez de reescrita. Havia uma coluna `fase.orcado` somada
   // aqui: ninguém mais escrevia nela desde que a árvore fase→serviço entrou, e a home
@@ -92,7 +93,7 @@ app.get('/api/obras', (req, res) => {
       (SELECT COALESCE(SUM(valor), 0) FROM saida WHERE fase_id = f.id AND pago_em IS NOT NULL) AS pago
     FROM fase f
   `).all(), (f) => f.obra_id)
-  res.json(obras.map((o) => ({
+  res.json(lista.map((o) => ({
     ...o,
     orcado: orcado[o.id] || 0,
     gasto: gasto[o.id] || 0,
@@ -220,12 +221,14 @@ app.get('/api/obra/:id', (req, res) => {
   const diario = db.prepare(
     'SELECT id, fase_id, texto, autor, autor_id, criado_em FROM diario WHERE obra_id = ? ORDER BY criado_em DESC, id DESC',
   ).all(id).map(({ autor_id, ...d }) => ({ ...d, editavel: podeEditarPost(req, { autor_id }), anexos: anexosDo.all(d.id) }))
+  // Pasta que a pessoa não pode ver não sai (Documentos); `editavel` diz se ela pode excluir.
   const arquivos = db.prepare(
-    'SELECT id, pasta, nome, ref, criado_em, diario_id FROM arquivo WHERE obra_id = ? ORDER BY id DESC',
-  ).all(id)
-  // Campo recebe o que o diário e a galeria usam - lançamento, insumo e fornecedor
-  // são valor e custo, e não saem do servidor pra ele.
-  if (req.papel === 'campo') {
+    'SELECT id, pasta, nome, ref, criado_em, diario_id, autor_id FROM arquivo WHERE obra_id = ? ORDER BY id DESC',
+  ).all(id).filter((a) => podePasta(req, a.pasta))
+    .map(({ autor_id, ...a }) => ({ ...a, editavel: podeEditarArquivo(req, { autor_id }) }))
+  // Sem `ver_valores` sai o que o diário e a galeria usam - lançamento, insumo e
+  // fornecedor são valor e custo, e não saem do servidor.
+  if (!pode(req, 'ver_valores')) {
     return res.json({ obra, cliente, clientes: [], fases, saidas: [], entradas: [], itens: [], fornecedores: [], diario, arquivos })
   }
   res.json({ obra, cliente, clientes, fases, saidas, entradas, itens, fornecedores, diario, arquivos })
@@ -415,8 +418,8 @@ app.post('/api/diario', (req, res) => {
   try {
     const id = Number(db.prepare('INSERT INTO diario (obra_id, fase_id, texto, autor, autor_id, criado_em) VALUES (?,?,?,?,?,?)')
       .run(obra_id, fase_id, texto.trim(), req.usuario, req.usuarioId, agora).lastInsertRowid)
-    const ins = db.prepare('INSERT INTO arquivo (obra_id, pasta, nome, ref, criado_em, diario_id) VALUES (?,?,?,?,?,?)')
-    for (const a of anexos) ins.run(obra_id, 'dia_a_dia', a.nome, a.ref, agora, id)
+    const ins = db.prepare('INSERT INTO arquivo (obra_id, pasta, nome, ref, criado_em, diario_id, autor_id) VALUES (?,?,?,?,?,?,?)')
+    for (const a of anexos) ins.run(obra_id, 'dia_a_dia', a.nome, a.ref, agora, id, req.usuarioId)
     db.exec('COMMIT')
     res.json({ id })
   } catch (e) {
@@ -443,9 +446,10 @@ app.patch('/api/diario/:id', (req, res) => {
     const del = db.prepare('DELETE FROM arquivo WHERE id = ?')
     for (const a of antigos) if (!refs.has(a.ref)) del.run(a.id)
     const tinha = new Set(antigos.map((a) => a.ref))
-    const ins = db.prepare('INSERT INTO arquivo (obra_id, pasta, nome, ref, criado_em, diario_id) VALUES (?,?,?,?,?,?)')
+    const ins = db.prepare('INSERT INTO arquivo (obra_id, pasta, nome, ref, criado_em, diario_id, autor_id) VALUES (?,?,?,?,?,?,?)')
     const agora = new Date().toISOString()
-    for (const a of anexos) if (!tinha.has(a.ref)) ins.run(obra_id, 'dia_a_dia', a.nome, a.ref, agora, id)
+    // O anexo é do post: fica com o autor dele, mesmo se quem editou foi outra pessoa.
+    for (const a of anexos) if (!tinha.has(a.ref)) ins.run(obra_id, 'dia_a_dia', a.nome, a.ref, agora, id, post.autor_id)
     db.exec('COMMIT')
     res.json({ id })
   } catch (e) {
@@ -477,25 +481,29 @@ app.post('/api/arquivos', (req, res) => {
   // 'cliente' é constante DO SERVIDOR, nunca vem do corpo: assim a lista branca segue
   // valendo pro caso da obra, que é o único onde a tela escolhe pasta.
   if (cliente_id) {
-    // Documento de cliente é cadastro do escritório, não galeria de obra.
-    if (req.papel === 'campo') return res.status(403).json({ erro: 'sem permissão' })
+    // Documento de cliente é cadastro, não galeria de obra.
+    if (!pode(req, 'cadastros')) return res.status(403).json({ erro: 'sem permissão' })
     const r = db.prepare('INSERT INTO arquivo (cliente_id, pasta, nome, ref, criado_em) VALUES (?,?,?,?,?)')
       .run(Number(cliente_id), 'cliente', nome, ref, new Date().toISOString())
     return res.json({ id: Number(r.lastInsertRowid) })
   }
   if (!PASTAS_UPLOAD.includes(pasta)) return res.status(400).json({ erro: 'pasta inválida' })
   if (!podeObra(req, obra_id)) return res.status(404).json({ erro: 'obra não encontrada' })
-  const r = db.prepare('INSERT INTO arquivo (obra_id, pasta, nome, ref, criado_em) VALUES (?,?,?,?,?)')
-    .run(obra_id, pasta, nome, ref, new Date().toISOString())
+  // Documentos com `documentos`; Fotos e Projetos com `diario`.
+  if (!pode(req, pasta === 'documentos' ? 'documentos' : 'diario')) return res.status(403).json({ erro: 'sem permissão' })
+  const r = db.prepare('INSERT INTO arquivo (obra_id, pasta, nome, ref, criado_em, autor_id) VALUES (?,?,?,?,?,?)')
+    .run(obra_id, pasta, nome, ref, new Date().toISOString(), req.usuarioId)
   res.json({ id: Number(r.lastInsertRowid) })
 })
 // Some da Galeria. Se for anexo de um post, o post continua lá - só perde o anexo.
 app.delete('/api/arquivos/:id', (req, res) => {
-  // Arquivo sem obra é documento de cliente: pro campo, fora do alcance também.
-  const arq = db.prepare('SELECT obra_id FROM arquivo WHERE id = ?').get(Number(req.params.id))
-  if (arq && (arq.obra_id == null ? req.papel === 'campo' : !podeObra(req, arq.obra_id))) {
+  // Arquivo sem obra é documento de cliente: é de quem mexe em cadastro.
+  const arq = db.prepare('SELECT obra_id, pasta, autor_id FROM arquivo WHERE id = ?').get(Number(req.params.id))
+  if (arq && (arq.obra_id == null ? !pode(req, 'cadastros') : !podeObra(req, arq.obra_id) || !podePasta(req, arq.pasta))) {
     return res.status(404).json({ erro: 'arquivo não encontrado' })
   }
+  // Excluir é do autor, ou de quem tem `editar_de_outros` (19/10/2026).
+  if (arq && arq.obra_id != null && !podeEditarArquivo(req, arq)) return res.status(403).json({ erro: 'só quem enviou exclui' })
   db.prepare('DELETE FROM arquivo WHERE id = ?').run(Number(req.params.id))
   res.json({ ok: true })
 })

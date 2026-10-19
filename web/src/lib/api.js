@@ -22,10 +22,16 @@ export const login = (usuario, senha) => req('POST', '/api/login', { usuario, se
 export const logout = () => req('POST', '/api/logout')
 
 // Cadastro de usuários - só o administrador (UPDATE.md §5). PATCH parcial; senha
-// vazia mantém a atual. `obras` só vale pro papel campo.
+// vazia mantém a atual. `obras` só vale pra quem não tem "Todas as obras".
 export const getUsuarios = () => req('GET', '/api/usuarios')
 export const criarUsuario = (dados) => req('POST', '/api/usuarios', dados)
 export const patchUsuario = (id, dados) => req('PATCH', `/api/usuarios/${id}`, dados)
+// Perfis: `{ catalogo, perfis }` - o catálogo de permissões vem junto, é dele que a
+// tela monta as caixinhas.
+export const getPerfis = () => req('GET', '/api/perfis')
+export const criarPerfil = (dados) => req('POST', '/api/perfis', dados)
+export const patchPerfil = (id, dados) => req('PATCH', `/api/perfis/${id}`, dados)
+export const excluirPerfil = (id) => req('DELETE', `/api/perfis/${id}`)
 
 export const getObras = () => req('GET', '/api/obras')
 export const criarObra = (dados) => req('POST', '/api/obras', dados)

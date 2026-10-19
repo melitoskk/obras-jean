@@ -1,4 +1,5 @@
 import express from 'express'
+import { pode } from '../auth.js'
 import db, { novoOrcamento } from '../db.js'
 
 // Rotas do módulo Orçamento. Saíram de server.js porque ele já passava de 350 linhas.
@@ -323,6 +324,11 @@ r.put('/api/orcamento/:id/servicos', (req, res) => {
 // e que ordena "concluída em". `percentual` é o de referência (§2), ponto-base; null
 // volta ao padrão do catálogo.
 r.patch('/api/fases/:id', (req, res) => {
+  // Concluir/reabrir e a taxa são de `concluir_fase`; o % de referência é da estimativa.
+  const fecha = ['concluida_em', 'taxa_tipo', 'taxa_valor'].some((k) => k in req.body)
+  if ((fecha && !pode(req, 'concluir_fase')) || ('percentual' in req.body && !pode(req, 'estimativa'))) {
+    return res.status(403).json({ erro: 'sem permissão' })
+  }
   const sets = []
   const vals = []
   if ('concluida_em' in req.body) {

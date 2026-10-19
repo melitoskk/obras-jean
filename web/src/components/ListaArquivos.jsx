@@ -28,14 +28,15 @@ export default function ListaArquivos({ arquivos, onExcluir }) {
             </figcaption>
           </a>
           {/* sm:opacity-0 e não opacity-0: celular não tem hover, e invisível-mas-clicável
-              é pior que sempre visível. */}
-          <button
+              é pior que sempre visível. `editavel` vem do servidor na Galeria (excluir é
+              de quem enviou, 19/10/2026); documento de cliente não traz, e mostra. */}
+          {a.editavel !== false && <button
             onClick={() => onExcluir(a)}
             title="Excluir"
             className="absolute top-1 right-1 rounded-[2px] bg-white/90 p-1 text-perigo sm:opacity-0 sm:group-hover:opacity-100"
           >
             <Trash2 size={12} />
-          </button>
+          </button>}
         </figure>
       ))}
     </div>

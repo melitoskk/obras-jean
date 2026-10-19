@@ -10,6 +10,7 @@ import {
   salvarVinculos, uploadAnexo,
 } from '../lib/api'
 import { formatMoeda, formatData } from '../lib/format'
+import { usePode } from '../lib/sessao'
 
 // Entradas e saídas de UMA fase na mesma lista, mais o botão que abre o lançamento.
 // Vive aqui porque duas telas mostram exatamente isto: Previsto × Realizado (dentro
@@ -19,6 +20,8 @@ export default function ExtratoFase({
   dados, setDados, recarregar, fases, ativa, previstoDaFase, realizadoDaFase, onFaixa,
 }) {
   const [lancando, setLancando] = useState(null) // {} = novo, objeto = editar
+  // Registrar, editar e excluir é de `lancar` (19/10/2026); sem ela o extrato só se lê.
+  const lanca = usePode()('lancar')
 
   // Ordem de LANÇAMENTO, do último pro primeiro. Por `criado_em` e não por `data`
   // (que é a data da nota, igual na rajada inteira) nem por `id` - entrada e saída
@@ -72,7 +75,7 @@ export default function ExtratoFase({
         linhas={lancamentos}
         chave={(l) => `${l.tipo}${l.id}`}
         vazio="Nenhum lançamento nesta fase."
-        onLinha={setLancando}
+        onLinha={lanca ? setLancando : undefined}
         colunas={[
           {
             chave: 'numero', titulo: 'Nº', largura: 82,
@@ -109,11 +112,13 @@ export default function ExtratoFase({
           },
         ]}
       />
-      <div className="flex shrink-0 justify-end pt-2">
-        <Botao variante="acento" icone={Plus} onClick={() => setLancando({})} disabled={!fases.length}>
-          Registrar lançamento
-        </Botao>
-      </div>
+      {lanca && (
+        <div className="flex shrink-0 justify-end pt-2">
+          <Botao variante="acento" icone={Plus} onClick={() => setLancando({})} disabled={!fases.length}>
+            Registrar lançamento
+          </Botao>
+        </div>
+      )}
 
       {lancando && (
         <MovimentacaoPanel

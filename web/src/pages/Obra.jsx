@@ -4,7 +4,7 @@ import ObraPanel from '../components/ObraPanel'
 import Tela from '../ui/Tela'
 import EmptyState from '../ui/EmptyState'
 import { getObras, getClientes } from '../lib/api'
-import { useSessao } from '../lib/sessao'
+import { usePode } from '../lib/sessao'
 
 // A obra é uma TELA, não um modal: clicar na lista traz pra cá. O conteúdo é o
 // mesmo ObraPanel de sempre - só a moldura muda (`pagina`). Criar obra continua
@@ -14,7 +14,7 @@ export default function Obra() {
   const navegar = useNavigate()
   const [obra, setObra] = useState(undefined) // undefined = carregando, null = não achou
   const [clientes, setClientes] = useState([])
-  const campo = useSessao().papel === 'campo'
+  const cadastra = usePode()('cadastros')
 
   // Vem da LISTA, não de GET /api/obra/:id: a lista traz `o.*` e o detalhe devolve
   // só um recorte (sem categoria, observação, datas, endereço) - o formulário
@@ -26,8 +26,8 @@ export default function Obra() {
     [id],
   )
   useEffect(() => { carregar() }, [carregar])
-  // Campo não edita o cadastro da obra - não há Combobox de cliente pra abastecer.
-  useEffect(() => { if (!campo) getClientes().then(setClientes).catch(() => {}) }, [campo])
+  // Sem `cadastros` não se edita a obra - não há Combobox de cliente pra abastecer.
+  useEffect(() => { if (cadastra) getClientes().then(setClientes).catch(() => {}) }, [cadastra])
 
   if (obra === undefined) return <Tela titulo="Obra" />
   if (!obra) return <Tela titulo="Obra"><EmptyState titulo="Obra não encontrada." /></Tela>

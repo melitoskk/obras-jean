@@ -3,21 +3,20 @@ import { Save, Ban, CircleCheck } from 'lucide-react'
 import Registro from '../ui/Registro'
 import Botao, { BarraAcao } from '../ui/Botao'
 import Faixa from '../ui/Faixa'
-import { Campos, Campo, Secao, Input, Radios, Check } from '../ui/Form'
+import { Campos, Campo, Secao, Input, Select, Check } from '../ui/Form'
+import PermissoesEditor from './PermissoesEditor'
 import { criarUsuario, patchUsuario } from '../lib/api'
-import { PAPEIS } from '../lib/sessao'
 import { norm } from '../lib/format'
 
-// O que cada papel alcança, dito na tela que o escolhe - é a tabela de UPDATE.md §5.
-const ALCANCE = {
-  admin: 'Tudo, inclusive cadastrar usuários.',
-  escritorio: 'Cadastros, estimativa, lançamentos e relatórios. Não cadastra usuário.',
-  campo: 'Só Diário de obra e Galeria, das obras marcadas abaixo. Não vê valores.',
-}
-
 // `usuario` nulo = criar. Senha em branco na edição = manter a atual.
-export default function UsuarioPanel({ usuario, obras = [], onFechar, onSalvo }) {
-  const [d, setD] = useState(() => ({ papel: 'escritorio', ativo: 1, obras: [], ...usuario, senha: '' }))
+// O usuário tem um PERFIL e, se marcado, permissões só dele no lugar das do perfil
+// (19/10/2026: o administrador define as permissões em tempo de uso). As obras só valem
+// pra quem não tem "Todas as obras".
+export default function UsuarioPanel({ usuario, obras = [], perfis = [], catalogo = [], onFechar, onSalvo }) {
+  const [d, setD] = useState(() => ({
+    ativo: 1, obras: [], perfil_id: perfis.find((p) => p.nome === 'Escritório')?.id ?? perfis[0]?.id ?? '',
+    permissoes: null, ...usuario, senha: '',
+  }))
   const [faixa, setFaixa] = useState(null)
   const [salvando, setSalvando] = useState(false)
   const [filtro, setFiltro] = useState('')
@@ -25,13 +24,19 @@ export default function UsuarioPanel({ usuario, obras = [], onFechar, onSalvo })
   const marcar = (obraId, sim) =>
     set('obras', sim ? [...d.obras, obraId] : d.obras.filter((o) => o !== obraId))
 
+  const perfil = perfis.find((p) => p.id === Number(d.perfil_id))
+  const proprias = d.permissoes != null
+  const efetivas = proprias ? d.permissoes : perfil?.permissoes ?? []
+  const porObra = !efetivas.includes('todas_obras')
+
   async function salvar() {
     if (!d.nome?.trim()) return setFaixa({ tipo: 'erro', texto: 'O nome é obrigatório.' })
     if (!d.id && !d.senha) return setFaixa({ tipo: 'erro', texto: 'A senha é obrigatória.' })
+    if (!d.perfil_id) return setFaixa({ tipo: 'erro', texto: 'Escolha um perfil.' })
     setSalvando(true)
     try {
-      const { id, nome, papel, ativo, senha } = d
-      const dados = { nome, papel, ativo, obras: papel === 'campo' ? d.obras : [] }
+      const { id, nome, ativo, senha, perfil_id, permissoes } = d
+      const dados = { nome, ativo, perfil_id: Number(perfil_id), permissoes, obras: porObra ? d.obras : [] }
       if (senha) dados.senha = senha
       if (id) await patchUsuario(id, dados)
       else await criarUsuario(dados)
@@ -55,7 +60,7 @@ export default function UsuarioPanel({ usuario, obras = [], onFechar, onSalvo })
       acoes={
         <BarraAcao>
           {/* Inativar em vez de excluir: o nome segue como autor no Diário de obra.
-              Só vale ao salvar, como o resto do formulário - igual ao de Clientes. */}
+              Só vale ao salvar, como o resto do formulário. */}
           {d.id && (
             <Botao
               variante="pilula"
@@ -83,20 +88,36 @@ export default function UsuarioPanel({ usuario, obras = [], onFechar, onSalvo })
             placeholder={d.id ? 'Em branco mantém a atual' : ''}
           />
         </Campo>
-        <Campo label="Papel" req>
-          <Radios
-            name="papel"
-            value={d.papel}
-            onChange={(v) => set('papel', v)}
-            opcoes={Object.entries(PAPEIS).map(([valor, label]) => ({ valor, label }))}
+        <Campo label="Perfil" req>
+          <Select
+            vazio={null}
+            value={d.perfil_id ?? ''}
+            onChange={(e) => set('perfil_id', Number(e.target.value))}
+            opcoes={perfis.map((p) => ({ valor: p.id, label: p.nome }))}
           />
-          <p className="pt-1 text-[#777]">{ALCANCE[d.papel]}</p>
         </Campo>
       </Campos>
 
       {!d.ativo && <p className="pt-2 text-perigo">Inativo: não consegue entrar no sistema.</p>}
 
-      {d.papel === 'campo' && (
+      <Secao>Permissões</Secao>
+      {/* Marcar copia as do perfil pra começar; desmarcar volta a seguir o perfil. */}
+      <div className="pb-2">
+        <Check checked={proprias} onChange={(sim) => set('permissoes', sim ? [...(perfil?.permissoes ?? [])] : null)}>
+          Permissões só deste usuário
+        </Check>
+        <p className="pl-5 text-[11px] text-[#888]">
+          {proprias ? 'Valem estas, e não as do perfil.' : `Segue o perfil ${perfil?.nome ?? ''}: mudar o perfil muda este usuário.`}
+        </p>
+      </div>
+      <PermissoesEditor
+        catalogo={catalogo}
+        valor={efetivas}
+        onChange={(permissoes) => set('permissoes', permissoes)}
+        disabled={!proprias}
+      />
+
+      {porObra && (
         <>
           <Secao>Obras em que trabalha ({d.obras.length})</Secao>
           {obras.length > 8 && (

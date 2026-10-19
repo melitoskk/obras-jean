@@ -318,6 +318,8 @@ insumo nem de fornecedor.
 
 ## 5. Usuários e permissionamento ✔ entregue
 
+> **Mudado em 19/10/2026 (Jean: "o permissionamento é criado em tempo de uso"):** os três papéis fixos viraram **perfis** editáveis (Administrador, Escritório, Campo), e o administrador cria outros na aba Usuários → Perfis. Cada usuário tem um perfil e, se marcado, **permissões só dele** no lugar das do perfil. O catálogo de permissões é fixo no código (`api/auth.js` `PERMISSOES`): ver valores, lançar, estimativa, concluir fase, cadastros, diário e fotos, documentos da obra, mexer no que é dos outros, todas as obras, usuários e perfis. O servidor decide por uma tabela rota → permissão; rota fora da tabela só passa pra quem tem todas. A pasta Documentos da Galeria passou a ter permissão própria (o Campo não vê mais contrato e cronograma), e arquivo da Galeria agora guarda o autor: excluir é de quem enviou, ou de quem tem "mexer no que é dos outros". O texto abaixo é o desenho de 03/10 e fica como histórico.
+
 Hoje: tabela `usuario` com `nome` e `senha`, semeada com `admin/admin`, e usuário novo
 só por linha de comando (`api/criar-usuario.js`). Login é um gate único - quem entra,
 pode tudo.

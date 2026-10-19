@@ -19,8 +19,12 @@ const { default: rotas } = await import('./rotas/orcamento.js')
 const { CATALOGO, PERCENTUAL_PADRAO } = await import('./catalogo.js')
 const { default: express } = await import('express')
 
+const { TODAS } = await import('./auth.js')
+
 const app = express()
 app.use(express.json())
+// Sem login neste teste: quem chama tem todas as permissões (auth.js decide o resto).
+app.use((req, _res, next) => { req.permissoes = new Set(TODAS); next() })
 app.use(rotas)
 const servidor = app.listen(0)
 const base = `http://127.0.0.1:${servidor.address().port}`

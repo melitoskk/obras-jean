@@ -9,6 +9,7 @@ import FileDrop from '../ui/FileDrop'
 import { Campos, Campo, Texto } from '../ui/Form'
 import { criarDiario, patchDiario, excluirDiario, uploadAnexo } from '../lib/api'
 import { formatData } from '../lib/format'
+import { usePode } from '../lib/sessao'
 
 // Aba Dia a dia - o registro do que aconteceu na obra. Quem usa está EM PÉ NO
 // CANTEIRO com o celular na mão: é a tela mais mobile do sistema.
@@ -17,14 +18,18 @@ import { formatData } from '../lib/format'
 export default function DiarioObra({ obraId, posts, fases, onMudou }) {
   const [escrevendo, setEscrevendo] = useState(null)
   const [excluir, setExcluir] = useState(null)
+  const lanca = usePode()('diario')
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-2 pb-2">
         <span className="text-[#777]">{posts.length} registro(s)</span>
-        <Botao variante="acento" icone={Plus} className="ml-auto" onClick={() => setEscrevendo({})}>
-          Registrar
-        </Botao>
+        {/* Registrar é de `diario` (19/10/2026); sem ela o diário só se lê. */}
+        {lanca && (
+          <Botao variante="acento" icone={Plus} className="ml-auto" onClick={() => setEscrevendo({})}>
+            Registrar
+          </Botao>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">

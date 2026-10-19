@@ -6,6 +6,7 @@ import EmptyState from '../ui/EmptyState'
 import FileDrop from '../ui/FileDrop'
 import ListaArquivos from './ListaArquivos'
 import { criarArquivo, excluirArquivo, uploadAnexo } from '../lib/api'
+import { usePode } from '../lib/sessao'
 
 // Aba Galeria - a visão por pasta do mesmo acervo que o Dia a dia alimenta.
 // Pastas são FIXAS: árvore de diretórios é um produto inteiro e não é este.
@@ -18,6 +19,11 @@ const PASTAS = [
 ]
 
 export default function GaleriaObra({ obraId, arquivos, onMudou }) {
+  // Documentos (contrato, cronograma) é de `documentos`; enviar Fotos e Projetos, de
+  // `diario` (19/10/2026). O servidor já não manda a pasta pra quem não pode vê-la.
+  const pode = usePode()
+  const pastas = PASTAS.filter((p) => p.id !== 'documentos' || pode('documentos'))
+  const envia = (id) => (id === 'documentos' ? pode('documentos') : pode('diario'))
   const [pasta, setPasta] = useState('fotos')
   const [enviando, setEnviando] = useState(false)
   const [excluir, setExcluir] = useState(null)
@@ -38,7 +44,7 @@ export default function GaleriaObra({ obraId, arquivos, onMudou }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 sm:flex-row">
       <nav className="flex shrink-0 gap-1 overflow-x-auto sm:w-[180px] sm:flex-col sm:overflow-visible">
-        {PASTAS.map((p) => {
+        {pastas.map((p) => {
           const n = arquivos.filter((a) => a.pasta === p.id).length
           return (
             <button
@@ -56,7 +62,7 @@ export default function GaleriaObra({ obraId, arquivos, onMudou }) {
       </nav>
 
       <div className="flex min-h-0 flex-1 flex-col">
-        {!atual.somenteLeitura && (
+        {!atual.somenteLeitura && envia(pasta) && (
           <div className="pb-2"><FileDrop uploading={enviando} onPick={subir} /></div>
         )}
 

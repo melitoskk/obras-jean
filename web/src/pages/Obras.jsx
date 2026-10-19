@@ -11,7 +11,7 @@ import Barra from '../ui/Barra'
 import { Campos, Campo, Secao, Input, Select } from '../ui/Form'
 import { getObras, getClientes } from '../lib/api'
 import { formatMoeda, norm, pct } from '../lib/format'
-import { useSessao } from '../lib/sessao'
+import { usePode } from '../lib/sessao'
 
 // Mesmo molde do módulo de Clientes.
 const VAZIO = { nome: '', cliente: '', situacao: 'todas' }
@@ -24,9 +24,11 @@ export default function Obras() {
   const [obras, setObras] = useState([])
   const [clientes, setClientes] = useState([])
   const [f, setF] = useState(VAZIO)
-  // Campo (UPDATE.md §5): a lista são as obras dele, sem coluna de dinheiro e sem
-  // criar obra - a API nem manda os números.
-  const campo = useSessao().papel === 'campo'
+  // Sem `ver_valores` a lista não tem coluna de dinheiro (a API nem manda os números);
+  // sem `cadastros`, não cria obra (UPDATE.md §5).
+  const pode = usePode()
+  const valores = pode('ver_valores')
+  const cadastra = pode('cadastros')
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }))
 
   // A rota manda no painel - mas aqui só sobrou o de CRIAR: obra existente virou
@@ -46,7 +48,7 @@ export default function Obras() {
   const carregar = useCallback(() => getObras().then(setObras).catch(() => setObras([])), [])
   useEffect(() => { carregar() }, [carregar])
   // Clientes ficam carregados pro Combobox do cadastro abrir sem esperar.
-  useEffect(() => { if (!campo) getClientes().then(setClientes).catch(() => {}) }, [campo])
+  useEffect(() => { if (cadastra) getClientes().then(setClientes).catch(() => {}) }, [cadastra])
 
   const linhas = useMemo(
     () =>
@@ -105,7 +107,7 @@ export default function Obras() {
               chave: 'status', titulo: 'Situação', largura: 110,
               render: (o) => <Badge cor={SITUACOES[o.status]?.cor}>{SITUACOES[o.status]?.label ?? o.status}</Badge>,
             },
-            ...(campo ? [] : [
+            ...(!valores ? [] : [
               { chave: 'orcado', titulo: 'Estimado (R$)', largura: 105, align: 'right', render: (o) => formatMoeda(o.orcado) },
               { chave: 'gasto', titulo: 'Gasto (R$)', largura: 105, align: 'right', render: (o) => formatMoeda(o.gasto) },
               {
@@ -143,11 +145,11 @@ export default function Obras() {
         />
 
         <BarraAcao esquerda={<span className="text-[#777]">{linhas.length} de {obras.length} obra(s)</span>}>
-          {!campo && <Botao variante="acento" icone={Plus} onClick={() => navegar('/obras/nova')}>Nova obra</Botao>}
+          {cadastra && <Botao variante="acento" icone={Plus} onClick={() => navegar('/obras/nova')}>Nova obra</Botao>}
         </BarraAcao>
       </Tela>
 
-      {criando && !campo && (
+      {criando && cadastra && (
         <ObraPanel
           obra={null}
           clientes={clientes}

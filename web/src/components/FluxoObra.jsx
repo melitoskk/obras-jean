@@ -11,6 +11,7 @@ import { MoneyInput, PctInput } from '../ui/Numeros'
 import ExtratoFase from './ExtratoFase'
 import { getFluxo, concluirFase } from '../lib/api'
 import { formatMoeda, formatPct, formatData, hoje } from '../lib/format'
+import { usePode } from '../lib/sessao'
 
 // Fluxo de caixa da obra. Todo lançamento - entrada ou saída - pertence a uma FASE,
 // então o caixa da obra é a soma dos caixas das fases; não existe lançamento solto.
@@ -30,6 +31,8 @@ import { formatMoeda, formatPct, formatData, hoje } from '../lib/format'
 // padrão (e não das somas do rodapé); a fase aberta fica, mesmo concluída.
 // `onMudou`: o saldo em destaque no topo da obra vem de fora e precisa recarregar.
 export default function FluxoObra({ obraId, onFaixa, onMudou }) {
+  // Concluir e reabrir fase é de `concluir_fase` (19/10/2026); ver a fase, de quem vê valores.
+  const concluiFase = usePode()('concluir_fase')
   const [dados, setDados] = useState(undefined) // undefined = carregando, null = não achou
   // A fase escolhida vai pro hash, como no Orçamento: recarregar não volta pro começo.
   const [faseAtiva, setFaseAtiva] = useState(() => Number(location.hash.slice(2)) || null)
@@ -211,10 +214,10 @@ export default function FluxoObra({ obraId, onFaixa, onMudou }) {
                         : `${formatPct(ativa.taxa_valor)}% do pago = R$ ${formatMoeda(previa({ tipo: 'pct', valor: ativa.taxa_valor }))}`}
                     </span>
                   )}
-                  <Botao icone={RotateCcw} onClick={reabrir}>Reabrir fase</Botao>
+                  {concluiFase && <Botao icone={RotateCcw} onClick={reabrir}>Reabrir fase</Botao>}
                 </>
               ) : (
-                <Botao icone={CheckCircle2} onClick={pedirTaxa}>Concluir fase</Botao>
+                concluiFase && <Botao icone={CheckCircle2} onClick={pedirTaxa}>Concluir fase</Botao>
               )}
             </div>
           )}
