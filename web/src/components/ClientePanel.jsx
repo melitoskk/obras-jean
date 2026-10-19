@@ -112,7 +112,8 @@ export default function ClientePanel({ cliente, onFechar, onSalvo }) {
     <Registro
       onFechar={onFechar}
       largura="md"
-      titulo={d.id ? `Cliente: ${cliente.nome}` : 'Novo cliente'}
+      // Inativo diz no título (rodada 3, A8): o botão "Ativar" sozinho não avisava.
+      titulo={d.id ? `Cliente: ${cliente.nome}${d.ativo ? '' : ' · inativo'}` : 'Novo cliente'}
       aba={aba}
       onAba={setAba}
       abas={[

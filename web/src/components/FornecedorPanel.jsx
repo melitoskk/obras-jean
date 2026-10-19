@@ -99,7 +99,8 @@ export default function FornecedorPanel({ fornecedor, onFechar, onSalvo }) {
       onFechar={onFechar}
       // O extrato é grade de 9 colunas; o cadastro, formulário estreito.
       largura={aba === 'extrato' ? 'xl' : 'md'}
-      titulo={d.id ? `Fornecedor: ${fornecedor.nome}` : 'Novo fornecedor'}
+      // Inativo diz no título (rodada 3, A8): o botão "Ativar" sozinho não avisava.
+      titulo={d.id ? `Fornecedor: ${fornecedor.nome}${d.ativo ? '' : ' · inativo'}` : 'Novo fornecedor'}
       aba={aba}
       onAba={setAba}
       abas={[

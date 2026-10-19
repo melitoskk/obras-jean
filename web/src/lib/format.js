@@ -98,6 +98,16 @@ export const pct = (parte, total) => (total > 0 ? (parte / total) * 100 : 0)
 // Normaliza pra busca: sem acento, sem case.
 export const norm = (s) => (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
+// Busca por palavras soltas (rodada 1, A16): cada palavra digitada tem de aparecer no
+// texto, em qualquer ordem, ignorando acento, maiúscula e pontuação - "cp ii" e "cpii"
+// acham "CP-II". Comparado também sem os espaços, pra "cpii" casar com "cp-ii".
+export function casaBusca(texto, q) {
+  const limpa = (s) => norm(s).replace(/[^a-z0-9]+/g, ' ').trim()
+  const alvo = limpa(texto)
+  const junto = alvo.replace(/ /g, '')
+  return limpa(q).split(' ').filter(Boolean).every((p) => alvo.includes(p) || junto.includes(p))
+}
+
 // ── Máscaras ────────────────────────────────────────────────────────────────────
 // Aplicam enquanto se digita e guardam o texto formatado - é o que a referência
 // mostra no grid, e reformatar na exibição custaria uma volta a mais por célula.

@@ -86,6 +86,7 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
       itemId: it.id,
       fornecedorId: forn,
       nome: it.nome,
+      unidade: it.unidade,
       quem: fornecedores.find((f) => f.id === forn)?.nome,
       combinado,
       valor: l.valorUnit,
@@ -136,7 +137,10 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
           {linhas.map((l, i) => {
             // Sinaliza, não bloqueia: pagar acima do preço base do item pinta o campo
             // de âmbar e diz de quanto era o base. Salva do mesmo jeito.
-            const base = insumos.find((x) => x.id === l.itemId)?.preco_base ?? 0
+            const item = insumos.find((x) => x.id === l.itemId)
+            const base = item?.preco_base ?? 0
+            // A unidade junto do preço (rodada 3, A18): "0,78 por Quilos" não confunde com o saco.
+            const porUnidade = item?.unidade ? ` por ${item.unidade}` : ''
             const acima = base > 0 && l.valorUnit > base
             return (
             <tr key={i} className="border-b border-grade-linha">
@@ -167,7 +171,7 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
                   onChange={(v) => set(i, { valorUnit: v })}
                   onBlur={() => { if (!fila.current.includes(i)) fila.current.push(i) }}
                   className={acima ? 'text-laranja' : ''}
-                  title={acima ? `Acima do preço base (${formatMoeda(base)})` : undefined}
+                  title={acima ? `Acima do preço base (${formatMoeda(base)}${porUnidade})` : undefined}
                 />
               </td>
               <td className="px-1.5 text-right tabular-nums">{formatMoeda(mult(l.qtd, l.valorUnit))}</td>
@@ -201,7 +205,7 @@ export default function ItensEditor({ linhas, onChange, insumos, fornecedores, h
         title={`${perguntando?.nome} saiu por ${formatBRL(perguntando?.valor ?? 0)}`}
         message={
           perguntando?.combinado
-            ? `O preço ${perguntando.quem ? `com ${perguntando.quem}` : 'base'} é ${formatBRL(perguntando.combinado)}.`
+            ? `O preço ${perguntando.quem ? `com ${perguntando.quem}` : 'base'} é ${formatBRL(perguntando.combinado)}${perguntando.unidade ? ` por ${perguntando.unidade}` : ''}.`
             : `Ainda não há preço ${perguntando?.quem ? `combinado com ${perguntando.quem}` : 'base'}.`
         }
         cancelLabel="Só nesta nota"

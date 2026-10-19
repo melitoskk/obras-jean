@@ -3,7 +3,7 @@
 // O resto é Intl e não vale teste.
 import assert from 'node:assert/strict'
 import {
-  mult, formatQtd, formatMoeda, lerQtd, lerColado, teclaCorrida, vencimentoTxt,
+  mult, formatQtd, formatMoeda, lerQtd, lerColado, teclaCorrida, vencimentoTxt, casaBusca,
   mascaraDoc, mascaraCep, mascaraTel, duracaoEntre, linkWhats, plural,
 } from './format.js'
 
@@ -123,3 +123,12 @@ assert.deepEqual(vencimentoTxt('2026-10-18', '2026-10-18'), { texto: 'Vence hoje
 assert.deepEqual(vencimentoTxt('2026-10-28', '2026-10-18'), { texto: 'Vence 28/10/2026', vencida: false })
 assert.deepEqual(vencimentoTxt(null, '2026-10-18'), { texto: 'Em aberto', vencida: false })
 console.log('format ok (vencimento)')
+
+// Busca do catálogo por palavras soltas (rodada 1, A16): "cp ii" e "cpii" acham "CP-II",
+// e a ordem das palavras não importa.
+const cimento = 'Cimento Portland CP-II-E-32 50kg'
+for (const q of ['cp ii', 'cpii', 'cp-ii', 'CIMENTO cp', 'portland cimento', '50 kg', 'cimento']) assert.ok(casaBusca(cimento, q), q)
+for (const q of ['cp iii', 'areia', 'cimento areia']) assert.ok(!casaBusca(cimento, q), q)
+assert.ok(casaBusca('Areia média', 'areia media'), 'sem acento')
+assert.ok(casaBusca('qualquer', ''), 'vazio casa com tudo')
+console.log('format ok (busca)')

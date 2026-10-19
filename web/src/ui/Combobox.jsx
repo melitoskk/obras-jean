@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, ChevronDown, X } from 'lucide-react'
 import Confirm from './Confirm'
-import { norm } from '../lib/format'
+import { norm, casaBusca } from '../lib/format'
 
 // O componente que faz "nada de cadastro obrigatório" funcionar.
 // Teclado: ↑↓ move, Enter seleciona, Esc fecha, Tab confirma e vai pro próximo campo.
@@ -32,7 +32,8 @@ export default function Combobox({
   const q = query.trim()
   // O que já está escolhido nunca fica oculto: estreitar a lista não pode esconder a
   // própria seleção de quem abriu o campo pra conferir.
-  const filtered = options.filter((o) => (q ? norm(o.label).includes(norm(q)) : !o.oculto || o.id === value))
+  // Palavras soltas (rodada 1, A16): "cp ii" acha "CP-II".
+  const filtered = options.filter((o) => (q ? casaBusca(o.label, q) : !o.oculto || o.id === value))
   const showCreate = onCreate && q && !options.some((o) => norm(o.label) === norm(q))
   const rows = showCreate ? [...filtered, { create: true }] : filtered
 
