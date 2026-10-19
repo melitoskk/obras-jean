@@ -15,6 +15,10 @@
 | R2-A22 | Aviso "alguém alterou esta obra" (versão do registro) quando duas abas mudam o mesmo campo | médio |
 | R2-A27 | Tirar fase com gasto: oferecer mover os lançamentos (o motivo já aparece) | pequeno/médio |
 | R2-A30 | Lista da fase ordenada por data, com opção de inverter | pequeno |
+| R4-A12 | Aviso de taxa de administração acima de 30% | pequeno |
+| R4-A7 | Lista do Fluxo com os itens criados na hora na descrição | pequeno |
+| R4-A20 | Aviso de nota com data antes do início da obra | pequeno |
+| R4-A24 | Voltar do navegador no cadastro de fornecedor com um toque só | pequeno |
 
 ### Feito do backlog em 19/10/2026
 | Origem | O que entrou | Commit |
@@ -133,3 +137,22 @@ Senha trocada no bloco A: `Jean@2026`. Bloco B: `carlos`/`carlos123` (campo, Cas
 **Perguntas abertas:** A13/A19 (pastas e exclusão do campo; o que o escritório pode), mais as três da rodada 2.
 **Não procede:** A7 ("8 meses"), A18 como número (cimento por kg), aba que para de responder (não reproduzido).
 **Fim do ciclo pedido (2 rodadas: 2 e 3).** A rodada 3 ainda trouxe 1 alta e 4 médias corrigíveis, e todas foram corrigidas aqui. As correções da rodada 3 ainda não passaram por uma rodada de verificação do agente.
+
+---
+
+## Rodada 4 - 19/10/2026
+**Missões:** bloco A M1-M3 (vazio, depois continua); bloco B M4-M7 (semeado; parou no limite de uso e foi retomado). Relatório: [rodada-4/relatorio.md](rodada-4/relatorio.md). Plano: [rodada-4/plano.md](rodada-4/plano.md).
+Verificou o feito em 19/10: numeração por obra, permissões configuráveis e o backlog. Senha do admin no bloco A: `Jean@Obras2026`. Usuários do bloco B: carlos (Campo), ana (Escritório), joao (Mestre com documentos), pedro (Comprador, só Salão paroquial), marta (Campo personalizado).
+
+**Verificação:** numeração por obra, pendências, material × mão de obra, contas a pagar, boleto, obra nova em Fases, área, taxa no topo/Visão/extrato, concluir obra, fase mantida, perfis, permissões próprias, Campo, último administrador e a semente ✅. Parciais, corrigidos: diário aceitava data futura (A2), data da obra sem faixa de ano (A1), busca "cpii" nas listas (A6), relatórios do Comprador (A15).
+
+**Achados:** 24. Alta 1 (A15), média 7, baixa 16. Todos os números conferidos à mão bateram nos dois blocos, inclusive o "A receber" antes e depois de concluir a Fundação (312.500,75), o material × mão de obra da Fundação (7.650,75 / 2.800,00) e o extrato da Terraplanagem do Muro.
+
+**Corrigidos (verificados por mim):**
+| Achados | Commit |
+|---|---|
+| A1, A2, A4, A5, A6, A8, A9, A10, A14 (endereço) | 0dda160 |
+| A15 (+ lista de fornecedores recortada), A17 (explicação), A18, A21, A22, cartão do Início | 203222c |
+
+**Backlog:** A7, A12, A13 (em R1-A15), A19 (em R1-A12), A20 (antes do início), A24.
+**Não procede:** A3 e A16 (decisões do Jean), A11 (um caractere colado é igual a uma tecla), A17 (número; a regra está certa), A20 (futuro só avisa, por decisão), A23 (o perfil decide).
