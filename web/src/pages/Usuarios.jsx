@@ -141,6 +141,7 @@ export default function Usuarios() {
           catalogo={catalogo}
           onFechar={fechar}
           onSalvo={() => { carregar(); fechar() }}
+          onPerfilSalvo={() => getPerfis().then(setPerfis).catch(() => {})}
         />
       )}
       {aba === 'perfis' && editandoPerfil && (

@@ -10,6 +10,10 @@ import Botao from './Botao'
 // da referência são todos assim.
 // Esc fecha. Clique fora NÃO fecha: é formulário, não menu, e perder o preenchido por
 // um clique torto é o tipo de coisa que ninguém perdoa.
+// Registros abertos, do de baixo pro de cima. Um pode abrir sobre outro (o perfil por
+// cima do usuário): Esc fecha só o de cima, não a pilha inteira.
+const pilha = []
+
 const LARGURAS = { md: 'max-w-3xl', lg: 'max-w-5xl', xl: 'max-w-7xl', full: 'max-w-none' }
 
 export default function Registro({
@@ -31,9 +35,11 @@ export default function Registro({
     // lista" no meio de um formulário é o mesmo estrago que o clique fora.
     if (!aberto || !onFechar || pagina) return
     // `defaultPrevented`: um campo dentro já usou o Esc (a lista do Combobox, por exemplo).
-    const onKey = (e) => e.key === 'Escape' && !e.defaultPrevented && onFechar()
+    const eu = {}
+    pilha.push(eu)
+    const onKey = (e) => e.key === 'Escape' && !e.defaultPrevented && pilha.at(-1) === eu && onFechar()
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey); pilha.splice(pilha.indexOf(eu), 1) }
   }, [aberto, onFechar, pagina])
 
   if (!aberto) return null

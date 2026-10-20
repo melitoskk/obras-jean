@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import {
-  Home, Users, Building2, Truck, Package, FileText, LogOut, UserCog,
+  Home, Users, Building2, Truck, Package, FileText, UserCog, KeyRound,
 } from 'lucide-react'
 
 import { BarraTopo, Rail, BarraInferior } from './ui/Rail'
 import Logo from './ui/Logo'
+import MenuUsuario from './ui/MenuUsuario'
 import Login from './pages/Login'
+import TrocarSenha, { TrocarSenhaPanel } from './pages/TrocarSenha'
 import Inicio from './pages/Inicio'
 import Clientes from './pages/Clientes'
 import Obras from './pages/Obras'
@@ -36,7 +38,8 @@ const MODULOS = [
   // traz as colunas A pagar e Caixa. Pagar é marcar "Pago" no próprio lançamento.
   // Contas a pagar (agenda de vencimento, baixa em lote) volta quando doer.
   { id: 'relatorios', label: 'Relatórios', icone: FileText, rota: '/relatorios', precisa: 'ver_valores' },
-  { id: 'usuarios', label: 'Usuários', icone: UserCog, rota: '/usuarios', precisa: 'usuarios' },
+  // Usuários não aparece no rail: mora no menu do ícone de usuário, no topo.
+  { id: 'usuarios', label: 'Usuários', icone: UserCog, rota: '/usuarios', precisa: 'usuarios', foraDoRail: true },
 ]
 // Cada módulo aparece pra quem tem a permissão dele (19/10/2026); Obras, pra todos -
 // é onde moram o diário e a galeria.
@@ -45,8 +48,10 @@ const modulosDo = (permissoes) => MODULOS.filter((m) => !m.precisa || permissoes
 function Moldura({ usuario, perfil, permissoes = [], onSair }) {
   const navegar = useNavigate()
   const { pathname } = useLocation()
+  const [trocandoSenha, setTrocandoSenha] = useState(false)
   const modulos = modulosDo(permissoes)
   const tem = (id) => modulos.some((m) => m.id === id)
+  const doRail = modulos.filter((m) => !m.foraDoRail)
   // Módulo ativo sai da rota - recarregar a página não perde o destaque no rail.
   // "/" casa exato: com startsWith toda rota casaria com Início. Rotas filhas futuras
   // (/clientes/12) ainda marcam o módulo pai pelo prefixo.
@@ -64,16 +69,21 @@ function Moldura({ usuario, perfil, permissoes = [], onSair }) {
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       <BarraTopo logo={<Logo />}>
-        <span className="hidden text-white/80 sm:inline">
-          {usuario} <span className="text-white/50">· {perfil}</span>
-        </span>
-        <button onClick={onSair} title="Sair" className="text-white/70 hover:text-white">
-          <LogOut size={17} />
-        </button>
+        {/* Não há tela de configurações: o menu só oferece o que existe. Usuários
+            fica aqui, e não no rail, pra quem administra. */}
+        <MenuUsuario
+          usuario={usuario}
+          perfil={perfil}
+          itens={[
+            { label: 'Trocar senha', icone: KeyRound, onClick: () => setTrocandoSenha(true) },
+            ...(tem('usuarios') ? [{ label: 'Usuários e perfis', icone: UserCog, onClick: () => ir('usuarios') }] : []),
+          ]}
+          onSair={onSair}
+        />
       </BarraTopo>
 
       <div className="flex min-h-0 flex-1">
-        <Rail modulos={modulos} ativo={ativo} onIr={ir} />
+        <Rail modulos={doRail} ativo={ativo} onIr={ir} />
         {/* Rota de módulo sem permissão não existe: cai na primeira tela que a pessoa
             tem. A API recusaria de todo jeito, e uma tela vazia de erro não ajuda. */}
         <Routes>
@@ -100,8 +110,10 @@ function Moldura({ usuario, perfil, permissoes = [], onSair }) {
         </Routes>
       </div>
 
+      {trocandoSenha && <TrocarSenhaPanel onFechar={() => setTrocandoSenha(false)} />}
+
       {/* pb da barra inferior mora nas páginas: só elas sabem o que rola. */}
-      <BarraInferior modulos={modulos} ativo={ativo} onIr={ir} />
+      <BarraInferior modulos={doRail} ativo={ativo} onIr={ir} />
     </div>
   )
 }
@@ -113,12 +125,15 @@ export default function App() {
 
   if (sessao === undefined) return null
   if (!sessao) return <Login onEntrar={setSessao} />
+  const sair = () => logout().then(() => { window.history.replaceState(null, '', '/'); setSessao(null) })
+  // Senha provisória (conta nova ou redefinida por outra pessoa): troca antes de entrar.
+  if (sessao.trocarSenha) return <TrocarSenha usuario={sessao.usuario} onTrocada={setSessao} onSair={sair} />
 
   return (
     <Sessao.Provider value={sessao}>
       <BrowserRouter>
         {/* Sair volta pro começo: quem entra depois não pode cair na tela do anterior (rodada 4, A21). */}
-        <Moldura {...sessao} onSair={() => logout().then(() => { window.history.replaceState(null, '', '/'); setSessao(null) })} />
+        <Moldura {...sessao} onSair={sair} />
       </BrowserRouter>
     </Sessao.Provider>
   )

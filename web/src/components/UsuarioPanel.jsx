@@ -1,25 +1,30 @@
 import { useState } from 'react'
-import { Save, Ban, CircleCheck } from 'lucide-react'
+import { Save, Ban, CircleCheck, Pencil, Plus } from 'lucide-react'
 import Registro from '../ui/Registro'
 import Botao, { BarraAcao } from '../ui/Botao'
 import Faixa from '../ui/Faixa'
 import { Campos, Campo, Secao, Input, Select, Check } from '../ui/Form'
 import PermissoesEditor from './PermissoesEditor'
+import PerfilPanel from './PerfilPanel'
 import { criarUsuario, patchUsuario } from '../lib/api'
 import { norm } from '../lib/format'
+import { useSessao } from '../lib/sessao'
 
 // `usuario` nulo = criar. Senha em branco na edição = manter a atual.
-// O usuário tem um PERFIL e, se marcado, permissões só dele no lugar das do perfil
+// O acesso vem do PERFIL ou de permissões específicas do usuário, no lugar das do perfil
 // (19/10/2026: o administrador define as permissões em tempo de uso). As obras só valem
 // pra quem não tem "Todas as obras".
-export default function UsuarioPanel({ usuario, obras = [], perfis = [], catalogo = [], onFechar, onSalvo }) {
+export default function UsuarioPanel({ usuario, obras = [], perfis = [], catalogo = [], onFechar, onSalvo, onPerfilSalvo }) {
   const [d, setD] = useState(() => ({
     ativo: 1, obras: [], perfil_id: perfis.find((p) => p.nome === 'Escritório')?.id ?? perfis[0]?.id ?? '',
     permissoes: null, ...usuario, senha: '',
   }))
   const [faixa, setFaixa] = useState(null)
+  const eu = useSessao().usuario === usuario?.nome
   const [salvando, setSalvando] = useState(false)
   const [filtro, setFiltro] = useState('')
+  // Perfil aberto por cima deste painel: o objeto do perfil, {} pra novo, null fechado.
+  const [perfilAberto, setPerfilAberto] = useState(null)
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }))
   const marcar = (obraId, sim) =>
     set('obras', sim ? [...d.obras, obraId] : d.obras.filter((o) => o !== obraId))
@@ -87,35 +92,56 @@ export default function UsuarioPanel({ usuario, obras = [], perfis = [], catalog
             autoComplete="new-password"
             placeholder={d.id ? 'Em branco mantém a atual' : ''}
           />
-        </Campo>
-        <Campo label="Perfil" req>
-          <Select
-            vazio={null}
-            value={d.perfil_id ?? ''}
-            onChange={(e) => set('perfil_id', Number(e.target.value))}
-            opcoes={perfis.map((p) => ({ valor: p.id, label: p.nome }))}
-          />
+          {/* Senha posta por outra pessoa é provisória: ela troca no próximo login. A própria, não. */}
+          {d.senha && !eu && <p className="pt-1 text-[11px] text-[#888]">Provisória: o usuário cria uma senha própria no próximo login.</p>}
         </Campo>
       </Campos>
 
       {!d.ativo && <p className="pt-2 text-perigo">Inativo: não consegue entrar no sistema.</p>}
 
-      <Secao>Permissões</Secao>
-      {/* Marcar copia as do perfil pra começar; desmarcar volta a seguir o perfil. */}
-      <div className="pb-2">
-        <Check checked={proprias} onChange={(sim) => set('permissoes', sim ? [...(perfil?.permissoes ?? [])] : null)}>
-          Permissões só deste usuário
-        </Check>
-        <p className="pl-5 text-[11px] text-[#888]">
-          {proprias ? 'Valem estas, e não as do perfil.' : `Segue o perfil ${perfil?.nome ?? ''}: mudar o perfil muda este usuário.`}
-        </p>
+      <Secao>Acesso</Secao>
+      {/* Ir pra "específicas" copia as do perfil pra começar; voltar pra "perfil" descarta
+          as próprias. O perfil_id segue gravado nos dois modos - o servidor exige um. */}
+      <div className="mb-3 inline-flex border border-grade-linha">
+        {[[false, 'Usar perfil'], [true, 'Permissões específicas']].map(([modo, label]) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => modo !== proprias && set('permissoes', modo ? [...(perfil?.permissoes ?? [])] : null)}
+            className={`px-3 py-1 ${modo === proprias ? 'bg-acento text-white' : 'bg-white hover:bg-[#f7f7f7]'}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
-      <PermissoesEditor
-        catalogo={catalogo}
-        valor={efetivas}
-        onChange={(permissoes) => set('permissoes', permissoes)}
-        disabled={!proprias}
-      />
+
+      {proprias ? (
+        <PermissoesEditor catalogo={catalogo} valor={d.permissoes} onChange={(permissoes) => set('permissoes', permissoes)} />
+      ) : (
+        <Campos lbl={92}>
+          <Campo label="Perfil" req>
+            {/* Ver/editar o perfil escolhido ou criar um, sem sair do usuário - o mesmo
+                atalho do cliente na obra. */}
+            <div className="flex items-center gap-1.5">
+              <div className="min-w-0 flex-1">
+                <Select
+                  vazio={null}
+                  value={d.perfil_id ?? ''}
+                  onChange={(e) => set('perfil_id', Number(e.target.value))}
+                  opcoes={perfis.map((p) => ({ valor: p.id, label: p.nome }))}
+                />
+              </div>
+              {perfil && (
+                <Botao icone={Pencil} className="px-1.5" title={`Ver e editar o perfil ${perfil.nome}`} onClick={() => setPerfilAberto(perfil)} />
+              )}
+              <Botao variante="acento" icone={Plus} className="px-1.5" title="Novo perfil" onClick={() => setPerfilAberto({})} />
+            </div>
+          </Campo>
+          <p className="pl-[calc(var(--lbl)+0.5rem)] text-[11px] text-[#888]">
+            {catalogo.filter((c) => efetivas.includes(c.id)).map((c) => c.rotulo).join(' · ') || 'Nenhuma permissão.'}
+          </p>
+        </Campos>
+      )}
 
       {porObra && (
         <>
@@ -137,6 +163,15 @@ export default function UsuarioPanel({ usuario, obras = [], perfis = [], catalog
             <p className="pt-2 text-laranja">Sem obra marcada, este usuário entra e não vê nada.</p>
           )}
         </>
+      )}
+
+      {perfilAberto && (
+        <PerfilPanel
+          perfil={perfilAberto.id ? perfilAberto : null}
+          catalogo={catalogo}
+          onFechar={() => setPerfilAberto(null)}
+          onSalvo={(id) => { setPerfilAberto(null); if (id) set('perfil_id', id); onPerfilSalvo?.() }}
+        />
       )}
     </Registro>
   )

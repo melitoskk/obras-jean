@@ -28,6 +28,7 @@ export default function Inicio() {
   }, [cadastra])
   const vencidas = contas.filter((c) => vencimentoTxt(c.vencimento).vencida)
   const somaDe = (ls) => ls.reduce((a, c) => a + c.valor, 0)
+  const incompletos = clientes.filter((c) => c.incompleto).length
 
   // Mais consumida primeiro: quem está estourando o orçamento é quem precisa de olho.
   const ativas = obras
@@ -37,23 +38,22 @@ export default function Inicio() {
   return (
     <Tela titulo="Início">
       <div className="grid max-w-4xl gap-2 pb-3 sm:grid-cols-3">
-        <Atalho icone={Building2} titulo="Obras" onClick={() => navegar('/obras')}>
-          <b className="text-[22px] text-titulo">{ativas.length}</b> em andamento de {obras.length}
+        <Atalho icone={Building2} titulo="Obras" valor={ativas.length} onClick={() => navegar('/obras')}>
+          em andamento
         </Atalho>
-        {/* Contas a pagar de todas as obras (rodada 2, A5): o vencido primeiro, em vermelho. */}
-        <Atalho icone={Receipt} titulo="Contas a pagar" onClick={() => navegar('/relatorios?r=apagar')}>
-          <b className="text-[22px] text-laranja">R$ {formatMoeda(somaDe(contas))}</b> em {contas.length} conta(s),
-          de todas as obras (também as paralisadas)
-          <div className={`mt-1 ${vencidas.length ? 'font-semibold text-perigo' : 'text-[#777]'}`}>
-            {vencidas.length ? `${vencidas.length} vencida(s): R$ ${formatMoeda(somaDe(vencidas))}` : 'nenhuma vencida'}
-          </div>
+        {/* Contas a pagar de todas as obras, paralisadas inclusive (rodada 2, A5): o vencido em vermelho. */}
+        <Atalho
+          icone={Receipt} titulo="Contas a pagar" cor="text-laranja"
+          valor={`R$ ${formatMoeda(somaDe(contas))}`}
+          onClick={() => navegar('/relatorios?r=apagar')}
+        >
+          {vencidas.length
+            ? <span className="font-semibold text-perigo">{vencidas.length} vencida(s) · R$ {formatMoeda(somaDe(vencidas))}</span>
+            : `${contas.length} conta(s), nenhuma vencida`}
         </Atalho>
         {cadastra && (
-          <Atalho icone={Users} titulo="Clientes" onClick={() => navegar('/clientes')}>
-            <b className="text-[22px] text-titulo">{clientes.length}</b> cadastrados
-            <div className="mt-1 text-[#777]">
-              {clientes.filter((c) => c.incompleto).length} com cadastro incompleto
-            </div>
+          <Atalho icone={Users} titulo="Clientes" valor={clientes.length} onClick={() => navegar('/clientes')}>
+            {incompletos ? `${incompletos} com cadastro incompleto` : 'cadastrados'}
           </Atalho>
         )}
       </div>
@@ -106,14 +106,15 @@ export default function Inicio() {
   )
 }
 
-const Atalho = ({ icone: Icone, titulo, onClick, children }) => (
+const Atalho = ({ icone: Icone, titulo, valor, cor = 'text-titulo', onClick, children }) => (
   <button
     onClick={onClick}
     className="border border-grade-linha bg-white p-3 text-left hover:border-acento hover:bg-[#f7fbfd]"
   >
-    <div className="mb-1 flex items-center gap-1.5 font-semibold text-titulo">
-      <Icone size={15} /> {titulo}
+    <div className="flex items-center gap-1.5 text-[12px] text-[#777]">
+      <Icone size={14} /> {titulo}
     </div>
-    {children}
+    <div className={`text-[22px] leading-tight font-bold ${cor}`}>{valor}</div>
+    <div className="text-[12px] text-[#777]">{children}</div>
   </button>
 )

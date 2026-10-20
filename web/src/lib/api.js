@@ -20,6 +20,8 @@ async function req(metodo, url, body) {
 export const getEu = () => req('GET', '/api/eu')
 export const login = (usuario, senha) => req('POST', '/api/login', { usuario, senha })
 export const logout = () => req('POST', '/api/logout')
+// A própria senha. Com senha provisória (conta nova, redefinida) `atual` não é pedida.
+export const trocarMinhaSenha = (atual, nova) => req('POST', '/api/minha-senha', { atual, nova })
 
 // Cadastro de usuários - só o administrador (UPDATE.md §5). PATCH parcial; senha
 // vazia mantém a atual. `obras` só vale pra quem não tem "Todas as obras".

@@ -68,6 +68,9 @@ if (db.prepare('SELECT COUNT(*) n FROM perfil').get().n === 0) {
   const tem = new Set(db.prepare('PRAGMA table_info(usuario)').all().map((c) => c.name))
   if (!tem.has('perfil_id')) db.exec('ALTER TABLE usuario ADD COLUMN perfil_id INTEGER REFERENCES perfil(id)')
   if (!tem.has('permissoes')) db.exec('ALTER TABLE usuario ADD COLUMN permissoes TEXT')
+  // Senha provisória: quem recebeu a senha de outra pessoa (conta nova, senha redefinida
+  // pelo administrador) troca no próximo login. Quem já existia não é incomodado.
+  if (!tem.has('trocar_senha')) db.exec('ALTER TABLE usuario ADD COLUMN trocar_senha INTEGER NOT NULL DEFAULT 0')
   // Quem já existia ganha o perfil do papel que tinha.
   for (const [nome, , papel] of PERFIS_PADRAO) {
     db.prepare('UPDATE usuario SET perfil_id = (SELECT id FROM perfil WHERE nome = ?) WHERE perfil_id IS NULL AND papel = ?')
@@ -118,7 +121,7 @@ function confere(senha, armazenado) {
 // Semente: admin/admin no primeiro run, pra tela abrir logável. Troque pela tela de
 // Usuários. Gate, não fortaleza.
 if (db.prepare('SELECT COUNT(*) n FROM usuario').get().n === 0) {
-  db.prepare("INSERT INTO usuario (nome, senha, papel, perfil_id) VALUES (?,?,'admin',?)").run('admin', hashSenha('admin'), perfilAdmin())
+  db.prepare("INSERT INTO usuario (nome, senha, papel, perfil_id, trocar_senha) VALUES (?,?,'admin',?,1)").run('admin', hashSenha('admin'), perfilAdmin())
 }
 
 // ponytail: cookie stateless assinado - sobrevive restart, sem session store.
@@ -135,7 +138,7 @@ const SEGREDO = process.env.OBRAS_SEGREDO || (() => {
 })()
 const assina = (id, senha) => createHmac('sha256', SEGREDO).update(`${id}:${senha}`).digest('hex')
 const selo = (u) => `${u.id}.${assina(u.id, u.senha)}`
-const buscaUsuario = db.prepare('SELECT id, nome, senha, papel, ativo, perfil_id, permissoes FROM usuario WHERE id = ?')
+const buscaUsuario = db.prepare('SELECT id, nome, senha, papel, ativo, perfil_id, permissoes, trocar_senha FROM usuario WHERE id = ?')
 export function abre(cookie) {
   if (!cookie) return null
   const i = cookie.indexOf('.')
@@ -174,6 +177,7 @@ const eu = (u) => ({
   usuario: u.nome,
   perfil: u.permissoes != null ? 'Personalizado' : perfilDe.get(u.perfil_id)?.nome ?? null,
   permissoes: [...permissoesDe(u)],
+  trocarSenha: !!u.trocar_senha,
 })
 
 export function login(req, res) {
@@ -181,7 +185,7 @@ export function login(req, res) {
   // `?? ''`: corpo sem `usuario` estourava o bind do SQLite e devolvia 500 com stack
   // trace - numa rota que responde ANTES do login. Sem usuário é 401, como qualquer
   // credencial errada.
-  const u = db.prepare('SELECT id, nome, senha, papel, ativo, perfil_id, permissoes FROM usuario WHERE nome = ?').get(usuario ?? '')
+  const u = db.prepare('SELECT id, nome, senha, papel, ativo, perfil_id, permissoes, trocar_senha FROM usuario WHERE nome = ?').get(usuario ?? '')
   // Inativo recebe a mesma resposta de senha errada: não confirma que o nome existe.
   if (!u || !u.ativo || !confere(senha ?? '', u.senha)) {
     return res.status(401).json({ erro: 'usuário ou senha inválidos' })
@@ -198,10 +202,28 @@ export function quemSou(req, res) {
   if (!u) return res.status(401).json({ erro: 'não autenticado' })
   res.json(eu(u))
 }
-// Barra tudo abaixo dela que não tenha cookie válido.
+// A pessoa troca a PRÓPRIA senha - qualquer um logado, sem permissão nenhuma. Com senha
+// provisória a atual não é pedida: acabou de ser digitada no login.
+export function trocarSenha(req, res) {
+  const u = sessaoDe(req)
+  if (!u) return res.status(401).json({ erro: 'não autenticado' })
+  const { atual, nova } = req.body ?? {}
+  if (!u.trocar_senha && !confere(atual ?? '', u.senha)) return res.status(400).json({ erro: 'a senha atual não confere' })
+  if (!nova || nova.length < 6) return res.status(400).json({ erro: 'a nova senha precisa de ao menos 6 caracteres' })
+  if (confere(nova, u.senha)) return res.status(400).json({ erro: 'a nova senha precisa ser diferente da atual' })
+  db.prepare('UPDATE usuario SET senha = ?, trocar_senha = 0 WHERE id = ?').run(hashSenha(nova), u.id)
+  // A assinatura cobre o hash: sem cookie novo a troca derrubaria a própria sessão.
+  const novo = buscaUsuario.get(u.id)
+  emitirSessao(res, novo)
+  res.json(eu(novo))
+}
+
+// Barra tudo abaixo dela que não tenha cookie válido. Senha provisória também barra:
+// a tela só deixa trocar, e a API não pode deixar o resto passar por fora dela.
 export function exigirLogin(req, res, next) {
   const u = sessaoDe(req)
   if (!u) return res.status(401).json({ erro: 'não autenticado' })
+  if (u.trocar_senha) return res.status(403).json({ erro: 'troque a senha para continuar' })
   req.usuario = u.nome
   req.usuarioId = u.id
   req.permissoes = permissoesDe(u)

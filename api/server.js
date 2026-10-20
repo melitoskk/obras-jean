@@ -2,7 +2,7 @@ import { writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import express from 'express'
 import db from './db.js'
-import { login, logout, quemSou, exigirLogin, exigirPapel, exigirObra, obrasVisiveis, podeObra, podeEditarPost, podeEditarArquivo, podePasta, podeAnexo, pode } from './auth.js'
+import { login, logout, quemSou, trocarSenha, exigirLogin, exigirPapel, exigirObra, obrasVisiveis, podeObra, podeEditarPost, podeEditarArquivo, podePasta, podeAnexo, pode } from './auth.js'
 import rotasOrcamento, { CUSTO } from './rotas/orcamento.js'
 import rotasFornecedor from './rotas/fornecedor.js'
 import rotasUsuario from './rotas/usuario.js'
@@ -32,6 +32,7 @@ if (WEB) {
 app.post('/api/login', login)
 app.post('/api/logout', logout)
 app.get('/api/eu', quemSou)
+app.post('/api/minha-senha', trocarSenha) // antes do exigirLogin: quem tem senha provisória só chega aqui
 app.use(exigirLogin)
 // Permissão (UPDATE.md §5): barra pela rota antes de qualquer handler. O recorte por
 // obra, por pasta e por autor fica nas rotas - `podeObra`, `podePasta` abaixo.

@@ -74,7 +74,8 @@ r.post('/api/usuarios', (req, res) => {
   if (erro) return res.status(400).json({ erro })
   const { nome, senha, perfil_id, permissoes, obras } = req.body
   const id = transacao(res, () => {
-    const novo = Number(db.prepare('INSERT INTO usuario (nome, senha, perfil_id, permissoes) VALUES (?,?,?,?)')
+    // Conta nova nasce com senha provisória: quem a definiu foi o administrador.
+    const novo = Number(db.prepare('INSERT INTO usuario (nome, senha, perfil_id, permissoes, trocar_senha) VALUES (?,?,?,?,1)')
       .run(nome.trim(), hashSenha(senha), Number(perfil_id), permissoesJson(permissoes)).lastInsertRowid)
     gravarObras(novo, obras)
     return novo
@@ -96,7 +97,8 @@ r.patch('/api/usuarios/:id', (req, res) => {
   if ('perfil_id' in b) { cols.push('perfil_id'); vals.push(Number(b.perfil_id)) }
   if ('permissoes' in b) { cols.push('permissoes'); vals.push(permissoesJson(b.permissoes)) }
   if ('ativo' in b) { cols.push('ativo'); vals.push(b.ativo ? 1 : 0) }
-  if (b.senha) { cols.push('senha'); vals.push(hashSenha(b.senha)) }
+  // Senha redefinida por outra pessoa vira provisória; a própria, não.
+  if (b.senha) { cols.push('senha', 'trocar_senha'); vals.push(hashSenha(b.senha), id === req.usuarioId ? 0 : 1) }
   const ok = transacao(res, () => {
     if (cols.length) db.prepare(`UPDATE usuario SET ${cols.map((c) => `${c}=?`).join(',')} WHERE id=?`).run(...vals, id)
     // Mudar perfil ou permissões pode ligar/desligar `todas_obras`: regrava o vínculo.

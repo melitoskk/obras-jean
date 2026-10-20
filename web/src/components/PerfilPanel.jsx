@@ -22,9 +22,9 @@ export default function PerfilPanel({ perfil, catalogo, onFechar, onSalvo }) {
     setSalvando(true)
     try {
       const dados = { nome: d.nome, permissoes: d.permissoes }
-      if (d.id) await patchPerfil(d.id, dados)
-      else await criarPerfil(dados)
-      onSalvo?.()
+      // O id volta pra quem abriu: o usuário que criou o perfil por aqui já sai com ele escolhido.
+      const id = d.id ? (await patchPerfil(d.id, dados), d.id) : (await criarPerfil(dados)).id
+      onSalvo?.(id)
     } catch (e) {
       setFaixa({ tipo: 'erro', texto: e.erro ? `Não foi possível salvar: ${e.erro}.` : 'Não foi possível salvar.' })
     } finally {
