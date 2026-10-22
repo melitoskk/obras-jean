@@ -118,7 +118,7 @@ export default function Combobox({
               // onMouseDown antes do blur, com preventDefault pra não perder o foco.
               onMouseDown={(e) => { e.preventDefault(); choose(row) }}
               onMouseEnter={() => setHi(i)}
-              className={`cursor-pointer px-2 py-1.5 ${i === hi ? 'bg-[#dceaf5]' : ''}`}
+              className={`cursor-pointer px-2 py-1.5 ${i === hi ? 'bg-[#fbdccb]' : ''}`}
             >
               {row.create ? (
                 <span className="flex items-center gap-1 text-titulo">

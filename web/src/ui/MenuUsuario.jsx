@@ -58,7 +58,7 @@ const Item = ({ icone: Icone, onClick, children }) => (
     type="button"
     role="menuitem"
     onClick={onClick}
-    className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#f7fbfd]"
+    className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#fff8f4]"
   >
     <Icone size={15} className="text-[#777]" /> {children}
   </button>

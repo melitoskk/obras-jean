@@ -53,10 +53,10 @@ function useTroca(provisoria, onTrocada) {
 export default function TrocarSenha({ usuario, onTrocada, onSair }) {
   const { campos, erro, salvar, salvando } = useTroca(true, onTrocada)
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#eef1f4] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#ececee] p-4">
       <form onSubmit={salvar} className="w-full max-w-[380px] border border-grade-linha bg-white shadow-lg">
-        <div className="flex flex-col items-center gap-2 bg-rail px-5 py-5 text-white">
-          <Logo />
+        <div className="flex flex-col items-center gap-2 bg-rail px-5 py-6">
+          <Logo variante="vertical" className="h-28 text-marca" />
         </div>
         <div className="px-5 py-5">
           <p className="pb-4 text-[#555]">

@@ -35,7 +35,7 @@ export default function DestaqueSaldo({ obraId, saldo = 0, caixa = 0, aPagar = 0
       {/* Quanto o cliente ainda deve - previsão fase a fase (relatorio.js aReceberPrevisto),
           e por isso a conta embaixo. */}
       {aReceber > 0 && (
-        <div className="flex min-w-[140px] flex-col justify-center border border-grade-linha bg-[#f4f8fc] px-3 py-1.5">
+        <div className="flex min-w-[140px] flex-col justify-center border border-grade-linha bg-[#f4f5f7] px-3 py-1.5">
           <span className="text-rotulo">A receber (previsto)</span>
           <b className="text-[17px] leading-tight tabular-nums text-titulo">R$ {formatMoeda(aReceber)}</b>
           {/* A conta por extenso no title (rodada 4, A17): no %, a fase concluída conta a taxa

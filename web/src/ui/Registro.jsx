@@ -4,7 +4,7 @@ import Abas from './Abas'
 import Tela from './Tela'
 import Botao from './Botao'
 
-// O modal-registro da referência: título azul em negrito, × à direita, faixa de abas,
+// O modal-registro da referência: título laranja em negrito, × à direita, faixa de abas,
 // corpo rolável e barra de ação colada no rodapé. `destaque` fica entre o título e as
 // abas: é o que vale pra todas elas (o saldo da obra, UPDATE.md §11.1). Substitui o SidePanel - os cadastros
 // da referência são todos assim.
@@ -75,7 +75,7 @@ export default function Registro({
         <header className="flex shrink-0 items-start gap-3 px-4 pt-3 pb-2">
           <h1 className="min-w-0 flex-1 text-[19px] leading-tight font-bold text-titulo">{titulo}</h1>
           {onFechar && (
-            <button type="button" onClick={onFechar} title="Fechar" className="mt-0.5 text-[#5b9bd5] hover:text-titulo">
+            <button type="button" onClick={onFechar} title="Fechar" className="mt-0.5 text-[#f98948] hover:text-titulo">
               <X size={18} />
             </button>
           )}

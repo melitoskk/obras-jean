@@ -38,7 +38,7 @@ export default function FileDrop({ nome, href, uploading, onPick, onRemove, acce
       onDragLeave={() => setOver(false)}
       onDrop={(e) => { e.preventDefault(); setOver(false); pick(e.dataTransfer.files) }}
       className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-[2px] border border-dashed px-2 py-3 text-[#999] ${
-        over ? 'border-acento bg-[#eaf3fa]' : 'border-borda'
+        over ? 'border-acento bg-[#fdf0e9]' : 'border-borda'
       }`}
     >
       <Paperclip size={13} /> Arraste um anexo ou clique

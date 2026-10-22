@@ -23,10 +23,10 @@ export default function Login({ onEntrar }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#eef1f4] p-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#ececee] p-4">
       <form onSubmit={entrar} className="w-full max-w-[340px] border border-grade-linha bg-white shadow-lg">
-        <div className="flex flex-col items-center gap-2 bg-rail px-5 py-5 text-white">
-          <Logo />
+        <div className="flex flex-col items-center gap-2 bg-rail px-5 py-6">
+          <Logo variante="vertical" className="h-28 text-marca" />
         </div>
 
         <div className="px-5 py-5">

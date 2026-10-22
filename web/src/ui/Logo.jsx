@@ -1,17 +1,20 @@
-// Wordmark em duas linhas, Montserrat. "carvalho" define a largura do bloco e "rosa"
-// se espalha pra bater com ela - flex + space-between resolve isso sem letter-spacing
-// chutado, e continua certo se a fonte ou o corpo mudarem.
-export default function Logo() {
+import marca from './marca/oak-marca.svg?raw'
+import horizontal from './marca/oak-horizontal.svg?raw'
+import vertical from './marca/oak-vertical.svg?raw'
+
+// Logo da Oak, vetores tirados do brand board. Os SVGs pintam com `currentColor`, então
+// a cor vem do `text-*` de quem usa (laranja da marca por padrão, branco sobre laranja).
+// Inline, e não <img>, justamente por isso. A altura manda e a largura acompanha.
+// variante: 'marca' (só o símbolo), 'horizontal' (símbolo + nome ao lado), 'vertical'.
+const SVGS = { marca, horizontal, vertical }
+
+export default function Logo({ variante = 'marca', className = 'h-10 text-marca' }) {
   return (
-    <span className="inline-block font-marca leading-none uppercase">
-      {/* ponytail: "rosa" só pode crescer até a largura natural dela caber em "carvalho" -
-          passando disso o justify-between estoura. Hoje sobra folga. */}
-      <span className="block text-[15px] font-semibold tracking-[.06em]">carvalho</span>
-      <span className="mt-1 flex justify-between text-[22px] text-laranja">
-        {[...'rosa'].map((c, i) => (
-          <span key={i}>{c}</span>
-        ))}
-      </span>
-    </span>
+    <span
+      role="img"
+      aria-label="Oak Construtora & Incorporadora"
+      className={`inline-block [&>svg]:h-full [&>svg]:w-auto ${className}`}
+      dangerouslySetInnerHTML={{ __html: SVGS[variante] }}
+    />
   )
 }

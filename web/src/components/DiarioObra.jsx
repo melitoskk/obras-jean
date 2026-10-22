@@ -73,7 +73,7 @@ export default function DiarioObra({ obraId, posts, fases, onMudou }) {
                     key={a.id}
                     href={`/api/anexo/${a.ref}`}
                     download
-                    className="flex items-center gap-1 border border-grade-linha px-1.5 py-0.5 text-titulo hover:bg-[#eaf3fa]"
+                    className="flex items-center gap-1 border border-grade-linha px-1.5 py-0.5 text-titulo hover:bg-[#fdf0e9]"
                   >
                     <Paperclip size={11} /> {a.nome}
                   </a>

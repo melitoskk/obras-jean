@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react'
 
-// Segunda coluna da referência: cabeçalho azul em caixa alta com "?" à direita, e o
+// Segunda coluna da referência: cabeçalho laranja em caixa alta com "?" à direita, e o
 // conteúdo do módulo abaixo (filtros de pesquisa ou submenu). A alça de recolher fica
 // grudada na borda direita, na altura do meio - é o `‹` da imagem Relatorios-min.
 export default function PainelModulo({ titulo, icone: Icone, ajuda, children }) {

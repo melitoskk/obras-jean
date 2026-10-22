@@ -48,7 +48,7 @@ export default function Usuarios() {
         <button
           key={a}
           onClick={() => (a === 'perfis' ? irPerfis() : navegar('/usuarios'))}
-          className={`border px-3 py-1 ${aba === a ? 'border-acento bg-[#eaf3fa] text-titulo' : 'border-grade-linha hover:bg-[#f7f7f7]'}`}
+          className={`border px-3 py-1 ${aba === a ? 'border-acento bg-[#fdf0e9] text-titulo' : 'border-grade-linha hover:bg-[#f7f7f7]'}`}
         >
           {label}
         </button>

@@ -12,3 +12,5 @@ obra_prima_referencias/
 validacao/
 # MCP do Playwright da validação, com caminhos desta máquina
 .mcp.json
+# Brand board da Oak (PDF de 90 MB): referência local, os vetores já estão em web/src/ui/marca/
+Brand Board*.pdf*

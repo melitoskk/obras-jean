@@ -2,7 +2,7 @@
 // (Não iniciada, Em andamento…), não como pílula berrante.
 const CORES = {
   neutro: 'bg-[#eeeeee] text-[#666] border-[#dddddd]',
-  acento: 'bg-[#e3eff8] text-titulo border-[#bcd7ea]',
+  acento: 'bg-[#fde6da] text-titulo border-[#f5c4a8]',
   sucesso: 'bg-[#e4f3e4] text-[#3d833d] border-[#c3e2c3]',
   aviso: 'bg-[#fdf1dc] text-[#9c6510] border-[#f3ddb3]',
   perigo: 'bg-[#fbe6e5] text-[#a63d3a] border-[#f0c7c5]',

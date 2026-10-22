@@ -109,7 +109,7 @@ export default function Inicio() {
 const Atalho = ({ icone: Icone, titulo, valor, cor = 'text-titulo', onClick, children }) => (
   <button
     onClick={onClick}
-    className="border border-grade-linha bg-white p-3 text-left hover:border-acento hover:bg-[#f7fbfd]"
+    className="border border-grade-linha bg-white p-3 text-left hover:border-acento hover:bg-[#fff8f4]"
   >
     <div className="flex items-center gap-1.5 text-[12px] text-[#777]">
       <Icone size={14} /> {titulo}

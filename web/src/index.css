@@ -1,26 +1,35 @@
 @import "tailwindcss";
 
-/* Linguagem visual das referências em obra_prima_referencias/: ERP denso de ~12px,
-   azul-navy no rail, cinza nos grids, Bootstrap-3 nos inputs. Ver PROJETO-v2.md §2. */
+/* Densidade e grids das referências em obra_prima_referencias/ (ERP de ~12px, Bootstrap-3
+   nos inputs - ver PROJETO-v2.md §2), com as cores do brand board da Oak: preto #080F0F
+   no rail, laranja #D83F03 de acento, laranja claro #F98948 e grafite #686C79. */
 @theme {
-  --color-rail:        #2a4a6b;
-  --color-rail-ativo:  #3a5f85;
-  --color-rail-borda:  #23405d;
-  --color-titulo:      #2e6da4;
-  --color-acento:      #337ab7;
+  --color-marca:       #d83f03;
+  --color-marca-claro: #f98948;
+  --color-grafite:     #686c79;
+
+  --color-rail:        #080f0f;
+  --color-rail-ativo:  #1f2828;
+  --color-rail-borda:  #182121;
+  /* Texto laranja um tom abaixo do da marca: #D83F03 no branco fica no limite do AA. */
+  --color-titulo:      #b83603;
+  --color-acento:      #d83f03;
+  /* Aviso continua âmbar - é estado, não marca, e precisa se distinguir do acento. */
   --color-laranja:     #ef9c1e;
   --color-sucesso:     #5cb85c;
-  --color-perigo:      #d9534f;
+  /* Vermelho mais frio que o Bootstrap, pra não se confundir com o laranja da marca. */
+  --color-perigo:      #c9302c;
   --color-grade-head:  #d8d8d8;
   --color-grade-zebra: #f4f4f4;
   --color-grade-linha: #e2e2e2;
   --color-borda:       #cccccc;
-  --color-rotulo:      #666666;
+  --color-rotulo:      #686c79;
   --color-barra:       #e8e8e8;
 
   --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  /* Só a marca. Montserrat vem do Google Fonts no index.html; sem ela, cai no sans. */
-  --font-marca: Montserrat, var(--font-sans);
+  /* Títulos. A tipografia da marca é Gotham (paga); Montserrat, do Google Fonts no
+     index.html, é a substituta livre mais próxima. Sem as duas, cai no sans. */
+  --font-marca: Gotham, Montserrat, var(--font-sans);
 }
 
 @layer base {
@@ -35,14 +44,14 @@
 }
 
 /* Repetir as mesmas 8 utilities em seis primitivos de formulário é o caso em que uma
-   classe CSS ganha. O foco azul-claro é o do Bootstrap 3 - é o que a referência tem. */
+   classe CSS ganha. O foco é o do Bootstrap 3, no laranja claro da marca. */
 @layer components {
   .op-input {
     width: 100%; height: 30px; padding: 0 8px;
     border: 1px solid var(--color-borda); border-radius: 2px;
     background: #fff; font-size: 12px; color: #333; outline: none;
   }
-  .op-input:focus { border-color: #66afe9; box-shadow: 0 0 5px rgba(102, 175, 233, 0.55); }
+  .op-input:focus { border-color: var(--color-marca-claro); box-shadow: 0 0 5px rgba(249, 137, 72, 0.55); }
   .op-input:disabled, .op-input[readonly] { background: #eeeeee; color: #777; }
 
   /* Variante de dentro de célula de grid: mais baixa e sem respiro lateral. */

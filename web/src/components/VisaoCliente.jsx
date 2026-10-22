@@ -4,6 +4,7 @@ import Botao from '../ui/Botao'
 import Barra from '../ui/Barra'
 import EmptyState from '../ui/EmptyState'
 import Logo from '../ui/Logo'
+import FolhaImpressao from '../ui/FolhaImpressao'
 import { getVisao } from '../lib/api'
 import { formatBRL, formatData, hoje, pct } from '../lib/format'
 
@@ -15,15 +16,15 @@ import { formatBRL, formatData, hoje, pct } from '../lib/format'
 // É também o enviável (§11.3, itens 6 e 7; Dúvida 15 = tela + imprimir): `Imprimir`
 // chama o navegador, e o `Salvar como PDF` dele faz o arquivo. O CSS de impressão
 // (index.css) mostra só a `.folha-impressao` e some com o que tem `.so-tela`.
-// Sem o arquivo do MIV (Dúvida 14), vale o visual atual do sistema.
+// O visual segue o brand board da Oak (Dúvida 14).
 
 // Paleta categórica de referência (dataviz, tema claro), na ordem que passa no teste de
 // daltonismo entre vizinhos. Fixa: a 8ª fatia é "Outras fases", nunca uma cor gerada.
 const SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948']
 const OUTRAS = '#b4b2aa'
 const ESTIMADO = '#b4b2aa'
-const REALIZADO = '#2a78d6'
-const INVESTIDO = '#eb6834'
+const REALIZADO = '#d83f03'
+const INVESTIDO = '#080f0f'
 
 // "R$ 1,2 mi" / "R$ 350 mil" - eixo e rótulo de gráfico. O valor exato fica no tooltip.
 const curto = (centavos) => {
@@ -59,10 +60,10 @@ export default function VisaoCliente({ obraId, situacao }) {
         </Botao>
       </div>
 
-      <div className="folha-impressao flex flex-col gap-4">
+      <FolhaImpressao>
         {/* Cabeçalho: vale na tela (é o que o cliente lê primeiro) e é a capa do impresso. */}
         <header className="flex items-end gap-4 border-b-2 border-titulo pb-2">
-          <div className="text-[#333]"><Logo /></div>
+          <Logo variante="horizontal" className="h-11 shrink-0 text-marca" />
           <div className="min-w-0 flex-1">
             <h2 className="text-[20px] leading-tight font-bold text-titulo">{obra.nome}</h2>
             <p className="text-[13px] text-[#555]">
@@ -129,9 +130,9 @@ export default function VisaoCliente({ obraId, situacao }) {
         <Fotos fotos={v.fotos} />
 
         <footer className="mt-2 border-t border-grade-linha pt-1.5 text-[10px] text-[#999]">
-          Carvalho Rosa · {obra.nome} · posição em {formatData(hoje())}. Valores em reais; executado = notas lançadas na obra.
+          Oak Construtora · {obra.nome} · posição em {formatData(hoje())}. Valores em reais; executado = notas lançadas na obra.
         </footer>
-      </div>
+      </FolhaImpressao>
     </div>
   )
 }
@@ -216,7 +217,7 @@ function Pizza({ fases, campo }) {
 
 // ── Barras: estimado × executado ────────────────────────────────────────────────────
 // Horizontal, uma linha por fase na ordem da obra: nome de fase é longo e não cabe em
-// eixo de barra em pé. Estimado em cinza (é a referência), executado em azul; o valor
+// eixo de barra em pé. Estimado em cinza (é a referência), executado em laranja; o valor
 // e a diferença ficam escritos na ponta, então dá pra ler sem a cor.
 function Barras({ fases }) {
   const max = Math.max(...fases.map((f) => Math.max(f.estimado, f.realizado)), 1)

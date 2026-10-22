@@ -51,7 +51,7 @@ export default function GaleriaObra({ obraId, arquivos, onMudou }) {
               key={p.id}
               onClick={() => setPasta(p.id)}
               className={`flex shrink-0 items-center gap-1.5 border px-2 py-1.5 text-left ${
-                pasta === p.id ? 'border-acento bg-[#eaf3fa] text-titulo' : 'border-grade-linha hover:bg-[#f7f7f7]'
+                pasta === p.id ? 'border-acento bg-[#fdf0e9] text-titulo' : 'border-grade-linha hover:bg-[#f7f7f7]'
               }`}
             >
               <Folder size={14} /> {p.nome}

@@ -1,11 +1,11 @@
 // Botões e a barra de ação do rodapé. As variantes saem direto das referências:
-// `Salvar` é azul sólido, e `Ativo`/`Relatórios`/`Ações` são pílulas de contorno
-// azul-claro.
+// `Salvar` é laranja sólido, e `Ativo`/`Relatórios`/`Ações` são pílulas de contorno
+// laranja-claro.
 
 const VARIANTES = {
   acento: 'bg-acento text-white border-acento hover:brightness-110',
   perigo: 'bg-perigo text-white border-perigo hover:brightness-110',
-  pilula: 'bg-white text-acento border-[#bcd7ea] hover:bg-[#eaf3fa]',
+  pilula: 'bg-white text-acento border-[#f5c4a8] hover:bg-[#fdf0e9]',
   neutro: 'bg-white text-[#555] border-borda hover:bg-[#f2f2f2]',
 }
 
@@ -32,7 +32,7 @@ export function BarraAcao({ children, esquerda }) {
   )
 }
 
-// Botão-texto azul: "Expandir tudo", "Pesquisa avançada", "Editar Fase/Serviço".
+// Botão-texto laranja: "Expandir tudo", "Pesquisa avançada", "Editar Fase/Serviço".
 export function Link({ icone: Icone, children, ...props }) {
   return (
     <button type="button" className="inline-flex items-center gap-1 text-titulo hover:underline" {...props}>

@@ -7,6 +7,7 @@ import Grid, { TotalGrid } from '../ui/Grid'
 import Badge from '../ui/Badge'
 import Botao from '../ui/Botao'
 import Logo from '../ui/Logo'
+import FolhaImpressao from '../ui/FolhaImpressao'
 import EmptyState from '../ui/EmptyState'
 import { Input, Select, Radios } from '../ui/Form'
 import ExtratoCredor from '../components/ExtratoCredor'
@@ -515,9 +516,9 @@ function FolhaExtrato({ dados, totais }) {
   const td = 'border-b border-grade-linha px-2 py-1 align-top'
 
   return (
-    <div className="folha-impressao mx-auto flex max-w-[900px] flex-col gap-4 bg-white p-6 text-[12px] text-[#333] shadow-sm">
+    <FolhaImpressao className="mx-auto max-w-[900px] bg-white p-6 text-[12px] text-[#333] shadow-sm">
       <header className="flex items-end gap-4 border-b-2 border-titulo pb-2">
-        <div><Logo /></div>
+        <Logo variante="horizontal" className="h-11 shrink-0 text-marca" />
         <div className="min-w-0 flex-1">
           <h2 className="text-[20px] leading-tight font-bold text-titulo">Extrato da fase</h2>
           <p className="text-[13px] text-[#555]">{[obra.nome, obra.cliente].filter(Boolean).join(' · ')}</p>
@@ -595,9 +596,9 @@ function FolhaExtrato({ dados, totais }) {
       </section>
 
       <footer className="mt-2 border-t border-grade-linha pt-1.5 text-[10px] text-[#999]">
-        Carvalho Rosa · {obra.nome} · fase {fase.codigo ?? ''} - {fase.nome} · emitido em {formatData(hoje())}.
+        Oak Construtora · {obra.nome} · fase {fase.codigo ?? ''} - {fase.nome} · emitido em {formatData(hoje())}.
         Valores em reais. Saldo = entradas − saídas lançadas, pagas ou não, pela data da nota.
       </footer>
-    </div>
+    </FolhaImpressao>
   )
 }

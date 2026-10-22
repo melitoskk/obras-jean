@@ -1,4 +1,4 @@
-// Faixa de abas. Ativa = fundo branco + texto azul + sublinhado azul de 3px.
+// Faixa de abas. Ativa = fundo branco + texto laranja + sublinhado laranja de 3px.
 // Aba desabilitada é cinza-claro e não clica - a própria referência faz isso em
 // `Nova obra` (Dia a dia, Galeria, Atendimento e Configurações nascem cinzas).
 // Rola na horizontal quando não cabe; no celular é a única saída.

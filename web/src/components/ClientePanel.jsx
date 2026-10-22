@@ -213,7 +213,7 @@ export default function ClientePanel({ cliente, onFechar, onSalvo }) {
                 key={o.id}
                 type="button"
                 onClick={() => navegar(`/obra/${o.id}`)}
-                className="flex items-center gap-2 border-b border-grade-linha px-2 py-2 text-left hover:bg-[#eaf3fa]"
+                className="flex items-center gap-2 border-b border-grade-linha px-2 py-2 text-left hover:bg-[#fdf0e9]"
               >
                 <Building2 size={15} className="shrink-0 text-[#bbb]" />
                 <span className="min-w-0 flex-1 truncate">

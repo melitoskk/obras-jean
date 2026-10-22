@@ -68,7 +68,7 @@ function Moldura({ usuario, perfil, permissoes = [], onSair }) {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
-      <BarraTopo logo={<Logo />}>
+      <BarraTopo logo={<Logo className="h-9 text-marca" />}>
         {/* Não há tela de configurações: o menu só oferece o que existe. Usuários
             fica aqui, e não no rail, pra quem administra. */}
         <MenuUsuario

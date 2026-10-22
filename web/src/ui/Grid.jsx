@@ -62,8 +62,8 @@ export default function Grid({
                   key={id ?? i}
                   onClick={onLinha ? () => onLinha(l) : undefined}
                   className={`border-b border-grade-linha ${
-                    selecionada ? 'bg-[#dceaf5]' : zebra && i % 2 ? 'bg-grade-zebra' : 'bg-white'
-                  } ${onLinha ? 'cursor-pointer hover:bg-[#eaf3fa]' : ''} ${classeLinha?.(l) ?? ''}`}
+                    selecionada ? 'bg-[#fbdccb]' : zebra && i % 2 ? 'bg-grade-zebra' : 'bg-white'
+                  } ${onLinha ? 'cursor-pointer hover:bg-[#fdf0e9]' : ''} ${classeLinha?.(l) ?? ''}`}
                 >
                   {colunas.map((c, j) => (
                     <td

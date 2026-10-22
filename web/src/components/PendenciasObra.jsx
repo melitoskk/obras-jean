@@ -132,7 +132,7 @@ function FormPendencia({ obraId, pendencia, fases, onFechar, onSalvo }) {
   }
 
   return (
-    <div className="mb-2 shrink-0 space-y-1.5 border border-acento bg-[#f7fbfd] p-2.5">
+    <div className="mb-2 shrink-0 space-y-1.5 border border-acento bg-[#fff8f4] p-2.5">
       <Input
         autoFocus
         value={texto}

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-// Moldura de navegação da referência: barra navy no topo e rail navy de ícones à
+// Moldura de navegação da referência: barra preta no topo e rail preto de ícones à
 // esquerda, cada módulo com ícone acima e rótulo em caixa alta de 9px.
 // modulos: [{ id, label, icone, disabled }] - quem sabe quais módulos existem é o
 // domínio; aqui só se desenha o que chega por prop.
@@ -26,9 +26,9 @@ export function Rail({ modulos = [], ativo, onIr }) {
             disabled={m.disabled}
             title={m.disabled ? `${m.label} - fora desta rodada` : m.label}
             onClick={() => onIr(m.id)}
-            // Ativo é BRANCO com texto navy na referência, não um navy mais claro.
+            // Ativo é um bloco cheio de cor (na referência, branco): aqui, o laranja da marca.
             className={`flex h-[58px] shrink-0 flex-col items-center justify-center gap-0.5 border-b border-rail-borda px-1 ${
-              on ? 'bg-white text-rail' : m.disabled ? 'text-white opacity-35' : 'text-white hover:bg-rail-ativo'
+              on ? 'bg-acento text-white' : m.disabled ? 'text-white opacity-35' : 'text-white hover:bg-rail-ativo'
             }`}
           >
             <m.icone size={20} strokeWidth={1.6} />
@@ -63,7 +63,7 @@ export function BarraInferior({ modulos = [], ativo, onIr }) {
           onClick={() => onIr(m.id)}
           // `grow shrink-0` + largura pelo conteúdo: `flex-1` (basis 0) fazia o rótulo
           // vazar do botão e "ORÇAMENTOS" encostar em "FORNECEDORES".
-          className={`flex min-w-[64px] shrink-0 grow flex-col items-center gap-0.5 px-2 py-1.5 whitespace-nowrap text-white ${m.id === ativo ? 'bg-rail-ativo' : ''}`}
+          className={`flex min-w-[64px] shrink-0 grow flex-col items-center gap-0.5 px-2 py-1.5 whitespace-nowrap text-white ${m.id === ativo ? 'bg-acento' : ''}`}
         >
           <m.icone size={19} strokeWidth={1.6} />
           <span className="text-[9px] font-semibold uppercase">{m.label}</span>
